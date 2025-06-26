@@ -46,7 +46,7 @@
 </head>
 <body>
     <div class="container">
-        <h1 class="text-3xl font-bold text-gray-800 text-center mb-6">CG Order Portal</h1>
+        <h1 class="text-3xl font-bold text-gray-800 text-center mb-6">CG Weekly Order Portal</h1>
 
         <!-- Message Box -->
         <div id="messageBox" class="hidden fixed inset-0 bg-gray-600 bg-opacity-75 flex items-center justify-center z-50">
@@ -60,7 +60,7 @@
         <div class="mb-6 bg-blue-50 p-4 rounded-lg">
             <label for="partSearch" class="block text-gray-700 text-lg font-semibold mb-2">Search Part by Number/Name:</label>
             <div class="flex flex-col sm:flex-row gap-4">
-                <input type="text" id="partSearch" placeholder="e.g., CG-001, BuzzOff2, etc."
+                <input type="text" id="partSearch" placeholder="e.g., CG-001, BuzzOff2"
                        class="flex-grow p-3 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 shadow-sm">
                 <button id="searchButton"
                         class="px-6 py-3 bg-blue-600 text-white rounded-lg font-semibold hover:bg-blue-700 transition duration-200 shadow-md">
@@ -148,22 +148,29 @@
         // --- UTILITY FUNCTIONS ---
 
         /**
-         * Parses CSV text into an array of objects.
+         * Parses CSV text into an array of objects, robustly handling commas within fields.
          * Assumes the first row is the header.
          * @param {string} csvText The CSV data as a string.
          * @returns {Array<object>} An array of objects, where each object represents a row.
          */
         function parseCSV(csvText) {
-            const lines = csvText.trim().split('\n');
+            const lines = csvText.trim().split(/\r?\n/); // Split by new line, handling both \n and \r\n
             if (lines.length === 0) return [];
 
-            const headers = lines[0].split(',').map(header => header.trim());
+            // Regex to split by comma, ignoring commas within double quotes
+            const csvSplitRegex = /,(?=(?:(?:[^"]*"){2})*[^"]*$)/;
+
+            const headers = lines[0].split(csvSplitRegex).map(header => header.trim().replace(/^"|"$/g, '')); // Remove quotes from headers
             const data = [];
 
             for (let i = 1; i < lines.length; i++) {
-                const values = lines[i].split(',').map(value => value.trim());
+                const line = lines[i].trim();
+                if (line === '') continue; // Skip empty lines
+
+                const values = line.split(csvSplitRegex).map(value => value.trim().replace(/^"|"$/g, '')); // Remove quotes from values
+
                 if (values.length !== headers.length) {
-                    console.warn(`Skipping row ${i + 1} due to column mismatch.`);
+                    console.warn(`Skipping row ${i + 1} due to column mismatch. Expected ${headers.length} columns, got ${values.length}. Row: "${line}"`);
                     continue;
                 }
                 const rowObject = {};
@@ -198,7 +205,6 @@
                 productCatalog = parseCSV(csvText);
                 console.log('Product catalog loaded:', productCatalog);
                 loadingIndicator.classList.add('hidden');
-                // Removed the annoying popup: showMessageBox('Product catalog loaded successfully!');
             } catch (error) {
                 console.error('Error fetching or parsing product catalog:', error);
                 loadingIndicator.classList.add('hidden');
