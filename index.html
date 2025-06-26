@@ -424,6 +424,11 @@
                     passwordOverlay.parentNode.removeChild(passwordOverlay);
                 }
                 mainContainer.classList.remove('hidden'); // Show the main content
+
+                // Prefill Name and Email fields
+                customerNameInput.value = 'Joel Pettit';
+                customerEmailInput.value = 'joel@chubblegum.com';
+
                 // Load initial data and render if password is correct
                 fetchProductCatalog();
             } else {
