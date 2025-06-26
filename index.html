@@ -3,7 +3,12 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Customer Ordering Portal</title>
+    <title>CG Weekly Ordering Portal</title>
+    <!-- Favicon -->
+    <!-- Replace 'favicon.ico' or 'path/to/your/favicon.png' with your actual favicon file path -->
+    <!-- For a quick placeholder, you can use an emoji as a favicon: data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🛒</text></svg> -->
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>⚙️</text></svg>">
+    
     <!-- Tailwind CSS CDN -->
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
@@ -42,9 +47,68 @@
             border-radius: 10px;
             border: 2px solid #edf2f7;
         }
+
+        /* Styles for password overlay */
+        #passwordOverlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.8);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 100;
+            flex-direction: column;
+        }
+        .password-prompt {
+            background-color: white;
+            padding: 30px;
+            border-radius: 10px;
+            text-align: center;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+        }
+        .password-prompt input {
+            padding: 10px;
+            margin: 15px 0;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            width: 80%;
+            max-width: 250px;
+            display: block;
+            margin-left: auto;
+            margin-right: auto;
+        }
+        .password-prompt button {
+            background-color: #4CAF50;
+            color: white;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+        .password-prompt button:hover {
+            background-color: #45a049;
+        }
+        .password-prompt p {
+            color: red;
+            margin-top: 10px;
+        }
     </style>
 </head>
 <body>
+    <!-- Password Protection Overlay -->
+    <div id="passwordOverlay">
+        <div class="password-prompt">
+            <h2 class="text-2xl font-bold mb-4">Enter Password to Access Portal</h2>
+            <input type="password" id="portalPassword" placeholder="Enter password">
+            <button id="passwordSubmit">Submit</button>
+            <p id="passwordError" class="hidden text-sm"></p>
+        </div>
+        <!-- Removed the note about client-side password protection -->
+    </div>
+
     <div class="container">
         <h1 class="text-3xl font-bold text-gray-800 text-center mb-6">CG Weekly Order Portal</h1>
 
@@ -126,6 +190,10 @@
         // This is the published CSV URL from your Google Sheet with part data.
         const GOOGLE_SHEET_CSV_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vRJeafxZBqtfXhW91V849PmPbr1C0ExZmnvfQ_410tdo4PPDvXNPHC44VrBEd3G7nRpPulT-XC6R79X/pub?gid=1341072506&single=true&output=csv';
 
+        // --- BASIC CLIENT-SIDE PASSWORD PROTECTION (NOT SECURE FOR SENSITIVE DATA) ---
+        // Change 'yourpassword' to your desired password.
+        const PORTAL_PASSWORD = 'Mole man'; 
+
         // --- GLOBAL VARIABLES & CACHED ELEMENTS ---
         let currentOrder = []; // Stores items added to the order
         let productCatalog = []; // Will store the product data fetched from the Google Sheet
@@ -144,6 +212,13 @@
         const messageBox = document.getElementById('messageBox');
         const messageText = document.getElementById('messageText');
         const closeMessageBoxButton = document.getElementById('closeMessageBox');
+
+        // Password related elements
+        const passwordOverlay = document.getElementById('passwordOverlay');
+        const portalPasswordInput = document.getElementById('portalPassword');
+        const passwordSubmitButton = document.getElementById('passwordSubmit');
+        const passwordError = document.getElementById('passwordError');
+
 
         // --- UTILITY FUNCTIONS ---
 
@@ -205,7 +280,8 @@
                 productCatalog = parseCSV(csvText);
                 console.log('Product catalog loaded:', productCatalog);
                 loadingIndicator.classList.add('hidden');
-            } catch (error) {
+            }
+            catch (error) {
                 console.error('Error fetching or parsing product catalog:', error);
                 loadingIndicator.classList.add('hidden');
                 showMessageBox('Error loading product catalog. Please try refreshing the page or contact support.');
@@ -294,7 +370,7 @@
         }
 
         /**
-         * Attaches event listeners for add/remove buttons in search results and order list.
+         * Attaches event listeners for various interactions.
          */
         function attachEventListeners() {
             searchButton.addEventListener('click', handleSearch);
@@ -304,7 +380,24 @@
                 }
             });
             submitOrderButton.addEventListener('click', handleSubmitOrder);
+            
+            // Allow clicking anywhere on the message box overlay to dismiss it
+            messageBox.addEventListener('click', (e) => {
+                // Only dismiss if the click is directly on the overlay, not its content
+                if (e.target === messageBox) {
+                    hideMessageBox();
+                }
+            });
+            // Still allow the OK button to dismiss it
             closeMessageBoxButton.addEventListener('click', hideMessageBox);
+
+            // Password protection event listeners
+            passwordSubmitButton.addEventListener('click', checkPassword);
+            portalPasswordInput.addEventListener('keypress', (e) => {
+                if (e.key === 'Enter') {
+                    checkPassword();
+                }
+            });
         }
 
         /**
@@ -318,6 +411,20 @@
                     renderOrderList();
                 });
             });
+        }
+
+        // --- PASSWORD PROTECTION LOGIC ---
+        function checkPassword() {
+            const enteredPassword = portalPasswordInput.value;
+            if (enteredPassword === PORTAL_PASSWORD) {
+                passwordOverlay.classList.add('hidden'); // Hide the overlay
+                // Load initial data and render if password is correct
+                fetchProductCatalog();
+            } else {
+                passwordError.textContent = 'Incorrect password. Please try again.';
+                passwordError.classList.remove('hidden');
+            }
+            portalPasswordInput.value = ''; // Clear input
         }
 
         // --- EVENT HANDLERS ---
@@ -473,7 +580,8 @@
         document.addEventListener('DOMContentLoaded', () => {
             attachEventListeners();
             renderOrderList(); // Render empty order list on load
-            fetchProductCatalog(); // Fetch products from Google Sheet on page load
+            // DO NOT fetchProductCatalog() here initially. It's called after successful password entry.
+            // If you remove password protection, move fetchProductCatalog() here.
         });
     </script>
 </body>
