@@ -385,10 +385,10 @@
                         } else {
                             currentOrder.push({
                                 id: productToAdd.id,
-                                title: productToAdd.title,
-                                sku: productToAdd.sku,
-                                imageUrl: productToAdd.imageUrl,
-                                quantity: quantity
+                                title: productToAdd.title || '', // Ensure string
+                                sku: productToAdd.sku || '',     // Ensure string
+                                imageUrl: productToAdd.imageUrl || 'https://placehold.co/60x60/CCCCCC/000000?text=No+Image', // Ensure string with fallback
+                                quantity: quantity || 0          // Ensure number
                             });
                         }
                         renderOrderList();
@@ -423,12 +423,13 @@
                 customer_name: customerName,
                 customer_email: customerEmail,
                 customer_notes: customerNotes,
+                // Ensure all fields are explicitly defined as strings/numbers for robustness
                 order_details: currentOrder.map(item => ({
-                    id: item.id,
-                    title: item.title,
-                    sku: item.sku,
-                    quantity: item.quantity,
-                    imageUrl: item.imageUrl
+                    id: item.id || '',
+                    title: item.title || '',
+                    sku: item.sku || '',
+                    quantity: item.quantity || 0,
+                    imageUrl: item.imageUrl || 'https://placehold.co/64x64/CCCCCC/000000?text=No+Image'
                 }))
             };
 
