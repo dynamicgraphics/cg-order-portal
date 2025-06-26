@@ -46,7 +46,7 @@
 </head>
 <body>
     <div class="container">
-        <h1 class="text-3xl font-bold text-gray-800 text-center mb-6">Customer Order Portal</h1>
+        <h1 class="text-3xl font-bold text-gray-800 text-center mb-6">CG Order Portal</h1>
 
         <!-- Message Box -->
         <div id="messageBox" class="hidden fixed inset-0 bg-gray-600 bg-opacity-75 flex items-center justify-center z-50">
@@ -60,7 +60,7 @@
         <div class="mb-6 bg-blue-50 p-4 rounded-lg">
             <label for="partSearch" class="block text-gray-700 text-lg font-semibold mb-2">Search Part by Number/Name/Barcode:</label>
             <div class="flex flex-col sm:flex-row gap-4">
-                <input type="text" id="partSearch" placeholder="e.g., ABC-123, Widget, 1234567890"
+                <input type="text" id="partSearch" placeholder="e.g., CG-123, WhattheFrenchToast, 1234567890"
                        class="flex-grow p-3 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 shadow-sm">
                 <button id="searchButton"
                         class="px-6 py-3 bg-blue-600 text-white rounded-lg font-semibold hover:bg-blue-700 transition duration-200 shadow-md">
@@ -117,7 +117,7 @@
     <!-- <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script> -->
     <script>
         // --- CONFIGURATION (UPDATE THESE VALUES) ---
-        const SHOPIFY_STORE_DOMAIN = 'dynamic.graphics'; // e.g., 'my-awesome-store.myshopify.com'
+        const SHOPIFY_STORE_DOMAIN = 'dynamicgraphics-5758.myshopify.com'; // e.g., 'my-awesome-store.myshopify.com'
         const SHOPIFY_STOREFRONT_ACCESS_TOKEN = '4fbd7279e645a6f38c63c47650c6e49c'; // Get this from your Shopify Custom App
         
         // --- GOOGLE CLOUD FUNCTION ENDPOINT (UPDATE THIS AFTER DEPLOYMENT) ---
