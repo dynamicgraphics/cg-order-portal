@@ -109,7 +109,8 @@
         <!-- Removed the note about client-side password protection -->
     </div>
 
-    <div class="container">
+    <!-- Main content container - initially hidden -->
+    <div class="container hidden">
         <h1 class="text-3xl font-bold text-gray-800 text-center mb-6">CG Weekly Order Portal</h1>
 
         <!-- Message Box -->
@@ -218,12 +219,13 @@
         const portalPasswordInput = document.getElementById('portalPassword');
         const passwordSubmitButton = document.getElementById('passwordSubmit');
         const passwordError = document.getElementById('passwordError');
+        const mainContainer = document.querySelector('.container'); // Get the main container
 
 
         // --- UTILITY FUNCTIONS ---
 
         /**
-         * Parses CSV text into an array of objects, robustly handling commas within fields.
+         * Parses CSV text into an safer array of objects, robustly handling commas within fields.
          * Assumes the first row is the header.
          * @param {string} csvText The CSV data as a string.
          * @returns {Array<object>} An array of objects, where each object represents a row.
@@ -417,7 +419,11 @@
         function checkPassword() {
             const enteredPassword = portalPasswordInput.value;
             if (enteredPassword === PORTAL_PASSWORD) {
-                passwordOverlay.classList.add('hidden'); // Hide the overlay
+                // Completely remove the password overlay from the DOM
+                if (passwordOverlay && passwordOverlay.parentNode) {
+                    passwordOverlay.parentNode.removeChild(passwordOverlay);
+                }
+                mainContainer.classList.remove('hidden'); // Show the main content
                 // Load initial data and render if password is correct
                 fetchProductCatalog();
             } else {
