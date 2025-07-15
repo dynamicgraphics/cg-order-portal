@@ -95,6 +95,12 @@
             color: red;
             margin-top: 10px;
         }
+        /* Style for the total quantity numbers in the summary */
+        .total-quantity-portal {
+            font-size: 1.125rem; /* text-lg */
+            font-weight: 700;    /* font-bold */
+            color: #333333;
+        }
     </style>
 </head>
 <body>
@@ -148,6 +154,14 @@
                 <div class="p-4 text-gray-500 text-center" id="emptyOrderMessage">No items in your order yet.</div>
                 <!-- Order items will be dynamically inserted here -->
             </div>
+            
+            <!-- NEW: Order Totals Summary Section -->
+            <div id="orderTotalsSummary" class="bg-white border border-gray-200 rounded-lg p-4 mt-4 hidden">
+                <h3 class="text-xl font-bold text-gray-800 mb-3">Order Totals:</h3>
+                <p class="text-gray-700 mb-1"><strong>Total Quantity (excluding "Glow in the Dark"):</strong> <span id="totalNonGlow" class="total-quantity-portal">0</span></p>
+                <p class="text-gray-700 mb-1"><strong>"Glow in the Dark" Stickers Quantity:</strong> <span id="totalGlow" class="total-quantity-portal">0</span></p>
+                <p class="text-gray-700"><strong>Envelope Quantity (in 1,000s):</strong> <span id="totalEnvelope" class="total-quantity-portal">0</span></p>
+            </div>
         </div>
 
         <!-- Customer Information and Submit Order Section -->
@@ -196,6 +210,9 @@
         // Change 'yourpassword' to your desired password.
         const PORTAL_PASSWORD = 'Mole man'; 
 
+        // NEW: Envelope Specific Configuration (must match Cloud Function)
+        const ENVELOPE_SKU = 'CG-SE1';
+
         // --- GLOBAL VARIABLES & CACHED ELEMENTS ---
         let currentOrder = []; // Stores items added to the order
         let productCatalog = []; // Will store the product data fetched from the Google Sheet
@@ -221,6 +238,12 @@
         const passwordSubmitButton = document.getElementById('passwordSubmit');
         const passwordError = document.getElementById('passwordError');
         const mainContainer = document.querySelector('.container'); // Get the main container
+
+        // NEW: Order Totals Summary Elements
+        const orderTotalsSummaryDiv = document.getElementById('orderTotalsSummary');
+        const totalNonGlowSpan = document.getElementById('totalNonGlow');
+        const totalGlowSpan = document.getElementById('totalGlow');
+        const totalEnvelopeSpan = document.getElementById('totalEnvelope');
 
 
         // --- UTILITY FUNCTIONS ---
@@ -331,9 +354,9 @@
             const uniqueId = product.id.replace(/[^a-zA-Z0-9-_]/g, ''); // Sanitize for HTML ID
 
             // Determine initial quantity value based on SKU
-            const initialQuantity = (product.sku === 'CG-SE1') ? 1 : 100; // 1 for envelope (represents 1000), 100 for others
-            const minQuantity = (product.sku === 'CG-SE1') ? 1 : 1; // Minimum of 1 for both
-            const quantityUnit = (product.sku === 'CG-SE1') ? ' (x1000)' : ''; // Add unit for envelope
+            const initialQuantity = (product.sku === ENVELOPE_SKU) ? 1 : 100; // 1 for envelope (represents 1000), 100 for others
+            const minQuantity = (product.sku === ENVELOPE_SKU) ? 1 : 1; // Minimum of 1 for both
+            const quantityUnit = (product.sku === ENVELOPE_SKU) ? ' (x1000)' : ''; // Add unit for envelope
 
             return `
                 <div class="flex flex-col sm:flex-row items-center bg-gray-50 border border-gray-200 rounded-lg p-4 shadow-sm">
@@ -360,17 +383,18 @@
         }
 
         /**
-         * Renders the current order list.
+         * Renders the current order list and updates totals.
          */
         function renderOrderList() {
             orderListDiv.innerHTML = ''; // Clear existing list
             if (currentOrder.length === 0) {
                 emptyOrderMessage.classList.remove('hidden');
                 orderListDiv.appendChild(emptyOrderMessage);
+                orderTotalsSummaryDiv.classList.add('hidden'); // Hide totals if order is empty
             } else {
                 emptyOrderMessage.classList.add('hidden');
                 currentOrder.forEach(item => {
-                    const quantityDisplay = (item.sku === 'CG-SE1') ? `${item.quantity} (in 1,000s)` : item.quantity;
+                    const quantityDisplay = (item.sku === ENVELOPE_SKU) ? `${item.quantity} (in 1,000s)` : item.quantity;
                     const orderItemHtml = `
                         <div class="flex items-center justify-between p-4 bg-white hover:bg-gray-50 transition duration-150">
                             <div class="flex items-center">
@@ -388,9 +412,35 @@
                     `;
                     orderListDiv.insertAdjacentHTML('beforeend', orderItemHtml);
                 });
+                updateOrderTotals(); // Call new function to update totals
+                orderTotalsSummaryDiv.classList.remove('hidden'); // Show totals if order has items
             }
             attachOrderListEventListeners();
         }
+
+        /**
+         * NEW: Calculates and updates the order totals summary.
+         */
+        function updateOrderTotals() {
+            let totalQuantityNonGlow = 0;
+            let totalQuantityGlow = 0;
+            let totalQuantityEnvelope = 0;
+
+            currentOrder.forEach(item => {
+                if (item.sku === ENVELOPE_SKU) {
+                    totalQuantityEnvelope += item.quantity;
+                } else if (item.title.toLowerCase().includes('glow in the dark') || item.sku.toLowerCase().includes('glow in the dark') || item.sku.toLowerCase().includes('gitd')) {
+                    totalQuantityGlow += item.quantity;
+                } else {
+                    totalQuantityNonGlow += item.quantity;
+                }
+            });
+
+            totalNonGlowSpan.textContent = new Intl.NumberFormat('en-US').format(totalQuantityNonGlow);
+            totalGlowSpan.textContent = new Intl.NumberFormat('en-US').format(totalQuantityGlow);
+            totalEnvelopeSpan.textContent = new Intl.NumberFormat('en-US').format(totalQuantityEnvelope * 1000); // Format in 1,000s
+        }
+
 
         /**
          * Attaches event listeners for various interactions.
@@ -431,7 +481,7 @@
                 button.addEventListener('click', (e) => {
                     const productId = e.target.dataset.productId;
                     currentOrder = currentOrder.filter(item => item.id !== productId);
-                    renderOrderList();
+                    renderOrderList(); // Re-render and update totals
                 });
             });
         }
@@ -530,7 +580,7 @@
                                 quantity: quantity || 0          // Ensure number
                             });
                         }
-                        renderOrderList();
+                        renderOrderList(); // Re-render and update totals
                         // Removed the annoying popup when adding an item: showMessageBox(`${quantity} x ${productToAdd.title} added to order!`);
                     });
                 });
@@ -593,7 +643,7 @@
                 showMessageBox('Order submitted successfully! You will receive a confirmation email shortly.');
                 // Clear the form and order
                 currentOrder = [];
-                renderOrderList();
+                renderOrderList(); // Re-render and update totals (will clear them)
                 searchInput.value = '';
                 searchResultsDiv.innerHTML = '';
                 customerNameInput.value = '';
@@ -611,7 +661,7 @@
         // --- INITIALIZATION ---
         document.addEventListener('DOMContentLoaded', () => {
             attachEventListeners();
-            renderOrderList(); // Render empty order list on load
+            renderOrderList(); // Render empty order list and hide totals on load
             // DO NOT fetchProductCatalog() here initially. It's called after successful password entry.
             // If you remove password protection, move fetchProductCatalog() here.
         });
