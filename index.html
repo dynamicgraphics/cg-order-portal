@@ -268,7 +268,7 @@
 
 
         /**
-         * Fetches product data from the Google Sheet CSV URL.
+         * Fetches product data from the Google Sheet CSV URL and adds hardcoded envelope.
          */
         async function fetchProductCatalog() {
             try {
@@ -281,6 +281,20 @@
                 }
                 const csvText = await response.text();
                 productCatalog = parseCSV(csvText);
+
+                // NEW: Add the hardcoded envelope item to the product catalog
+                const envelopeItem = {
+                    id: 'CG-SE1',
+                    title: 'Custom A7 Envelopes',
+                    sku: 'CG-SE1',
+                    imageUrl: 'https://storage.googleapis.com/cg-portal-assets/CG-SE1%20White%20Bubble%20Sticker%20Envelope.png', // Ensure this URL is correct and public
+                    searchTerms: ['envelope', 'envelopes', 'cg-se1']
+                };
+                // Check if the envelope item already exists to prevent duplicates on re-fetch
+                if (!productCatalog.some(item => item.id === envelopeItem.id)) {
+                    productCatalog.push(envelopeItem);
+                }
+                
                 console.log('Product catalog loaded:', productCatalog);
                 loadingIndicator.classList.add('hidden');
             }
@@ -316,6 +330,11 @@
             // Using product.id as the unique identifier for the HTML elements
             const uniqueId = product.id.replace(/[^a-zA-Z0-9-_]/g, ''); // Sanitize for HTML ID
 
+            // Determine initial quantity value based on SKU
+            const initialQuantity = (product.sku === 'CG-SE1') ? 1 : 100; // 1 for envelope (represents 1000), 100 for others
+            const minQuantity = (product.sku === 'CG-SE1') ? 1 : 1; // Minimum of 1 for both
+            const quantityUnit = (product.sku === 'CG-SE1') ? ' (x1000)' : ''; // Add unit for envelope
+
             return `
                 <div class="flex flex-col sm:flex-row items-center bg-gray-50 border border-gray-200 rounded-lg p-4 shadow-sm">
                     <img src="${product.imageUrl}" alt="${product.title}" class="w-24 h-24 object-contain rounded-lg mr-4 mb-4 sm:mb-0 flex-shrink-0" onerror="this.onerror=null;this.src='https://placehold.co/100x100/CCCCCC/000000?text=No+Image';">
@@ -324,7 +343,7 @@
                         <p class="text-sm text-gray-600">SKU: ${product.sku}</p>
                     </div>
                     <div class="flex items-center mt-4 sm:mt-0 flex-shrink-0">
-                        <input type="number" value="100" min="1"
+                        <input type="number" value="${initialQuantity}" min="${minQuantity}"
                                class="w-20 p-2 border border-gray-300 rounded-l-lg text-center quantity-input"
                                id="qty-${uniqueId}"
                                data-product-id="${product.id}"
@@ -333,7 +352,7 @@
                                data-product-image="${product.imageUrl}">
                         <button class="px-4 py-2 bg-blue-500 text-white rounded-r-lg hover:bg-blue-600 transition duration-200 add-to-order-btn"
                                 data-product-id="${product.id}">
-                            Add
+                            Add${quantityUnit}
                         </button>
                     </div>
                 </div>
@@ -351,13 +370,14 @@
             } else {
                 emptyOrderMessage.classList.add('hidden');
                 currentOrder.forEach(item => {
+                    const quantityDisplay = (item.sku === 'CG-SE1') ? `${item.quantity} (in 1,000s)` : item.quantity;
                     const orderItemHtml = `
                         <div class="flex items-center justify-between p-4 bg-white hover:bg-gray-50 transition duration-150">
                             <div class="flex items-center">
                                 <img src="${item.imageUrl}" alt="${item.title}" class="w-16 h-16 object-contain rounded-lg mr-4" onerror="this.onerror=null;this.src='https://placehold.co/64x64/CCCCCC/000000?text=No+Image';">
                                 <div class="min-w-0">
                                     <h4 class="font-semibold text-gray-800 break-words w-full">${item.title}</h4>
-                                    <p class="text-sm text-gray-600">SKU: ${item.sku} - Qty: ${item.quantity}</p>
+                                    <p class="text-sm text-gray-600">SKU: ${item.sku} - Qty: ${quantityDisplay}</p>
                                 </div>
                             </div>
                             <button class="px-3 py-1 bg-red-500 text-white rounded-lg hover:bg-red-600 transition duration-200 remove-from-order-btn"
