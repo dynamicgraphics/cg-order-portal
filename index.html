@@ -222,14 +222,6 @@
         const firebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : {};
         const initialAuthToken = typeof __initial_auth_token !== 'undefined' ? __initial_auth_token : null;
 
-        // Initialize Firebase
-        const app = initializeApp(firebaseConfig);
-        const db = getFirestore(app);
-        const auth = getAuth(app);
-
-        let currentUserId = null; // To store the authenticated user's UID
-        let currentUserEmail = null; // To store the authenticated user's email
-
         // --- CONFIGURATION ---
         const SHOPIFY_STORE_DOMAIN = 'dynamic.graphics'; 
         const SHOPIFY_STOREFRONT_ACCESS_TOKEN = 'DUMMY_TOKEN_NOT_USED'; 
@@ -253,7 +245,7 @@
         const customerNotesInput = document.getElementById('customerNotes');
         const submitOrderButton = document.getElementById('submitOrder');
         const messageBox = document.getElementById('messageBox');
-        const messageText = document.getElementById('messageText');
+        const messageText = document.getElementById('messageText'); 
         const closeMessageBoxButton = document.getElementById('closeMessageBox');
 
         // Authentication related elements
@@ -281,6 +273,10 @@
         const emptyOrderHistoryMessage = document.getElementById('emptyOrderHistoryMessage');
 
         let isLoginMode = true; // State for login/signup toggle
+
+        let app, db, auth; // Declare Firebase instances globally
+        let currentUserId = null; // To store the authenticated user's UID
+        let currentUserEmail = null; // To store the authenticated user's email
 
 
         // --- UTILITY FUNCTIONS ---
@@ -860,27 +856,40 @@
             attachEventListeners();
             renderOrderList(); // Initial render of an empty order list
 
-            // Firebase Authentication Listener
+            // Firebase Initialization and Auth Listener
+            // Check if firebaseConfig has projectId before initializing
+            if (!firebaseConfig.projectId) {
+                console.error('Firebase configuration error: "projectId" not found in __firebase_config. Please ensure your Canvas environment is correctly configured with Firebase.');
+                showMessageBox('Firebase setup error: Missing project ID. Please contact support or ensure your Canvas environment is properly configured for Firebase.');
+                return; // Stop execution if Firebase cannot be initialized
+            }
+
+            // Initialize Firebase instances only once projectId is confirmed
+            app = initializeApp(firebaseConfig);
+            auth = getAuth(app);
+            db = getFirestore(app);
+
             onAuthStateChanged(auth, async (user) => {
                 if (user) {
-                    currentUserId = user.uid;
-                    currentUserEmail = user.email; // Get email from authenticated user
+                    currentUserId = user.uid; // Assign to global variable
+                    currentUserEmail = user.email; // Assign to global variable
                     currentUserIdSpan.textContent = currentUserEmail || 'Anonymous User'; // Display email or 'Anonymous User'
                     userIdDisplay.classList.remove('hidden');
                     mainContainer.classList.remove('hidden'); // Show main content
                     authOverlay.classList.add('hidden'); // Hide auth overlay
 
-                    // Prefill Name and Email fields if authenticated
-                    customerNameInput.value = 'Joel Pettit'; // Still prefill name
-                    customerEmailInput.value = currentUserEmail || ''; // Prefill email from auth, make it readonly
+                    // Prefill Email field from auth, make it readonly
+                    customerEmailInput.value = currentUserEmail || ''; 
+                    // Clear name input for user to fill
+                    customerNameInput.value = '';
 
                     console.log('Firebase authenticated. User ID:', currentUserId, 'Email:', currentUserEmail);
                     listenForOrderHistory(); // Start listening for history
                     fetchProductCatalog(); // Fetch catalog after auth
                 } else {
                     console.log('No Firebase user signed in. Showing authentication prompt.');
-                    currentUserId = null;
-                    currentUserEmail = null;
+                    currentUserId = null; // Assign to global variable
+                    currentUserEmail = null; // Assign to global variable
                     userIdDisplay.classList.add('hidden');
                     mainContainer.classList.add('hidden'); // Hide main content
                     authOverlay.classList.remove('hidden'); // Show auth overlay
