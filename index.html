@@ -625,11 +625,10 @@
             try {
                 if (isLoginMode) {
                     await signInWithEmailAndPassword(auth, email, password);
-                    showMessageBox('Login successful!'); // Re-added success message
                 } else {
                     await createUserWithEmailAndPassword(auth, email, password);
-                    showMessageBox('Account created successfully! You are now logged in.'); // Re-added success message
                 }
+                // Rely on onAuthStateChanged to handle UI transition and message boxes
             } catch (error) {
                 let errorMessage = 'An unknown error occurred.';
                 switch (error.code) {
@@ -882,6 +881,7 @@
                     userIdDisplay.classList.remove('hidden');
                     mainContainer.classList.remove('hidden'); // Show main content
                     authOverlay.classList.add('hidden'); // Hide auth overlay
+                    authOverlay.style.display = 'none'; // Explicitly hide the overlay
 
                     // Prefill Email field from auth, make it readonly
                     customerEmailInput.value = currentUserEmail || ''; 
@@ -898,6 +898,7 @@
                     userIdDisplay.classList.add('hidden');
                     mainContainer.classList.add('hidden'); // Hide main content
                     authOverlay.classList.remove('hidden'); // Show auth overlay
+                    authOverlay.style.display = 'flex'; // Explicitly show the overlay
                     // Clear prefilled fields if logged out
                     customerNameInput.value = '';
                     customerEmailInput.value = '';
