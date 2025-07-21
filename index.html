@@ -54,12 +54,17 @@
             width: 100%;
             height: 100%;
             background-color: rgba(0, 0, 0, 0.8);
-            display: flex;
+            display: flex; /* Always start as flex for the overlay */
             justify-content: center;
             align-items: center;
             z-index: 100;
             flex-direction: column;
         }
+        /* The .hidden class will be added/removed by JS, but if present, it overrides display */
+        #authOverlay.hidden {
+            display: none !important; /* Use !important to ensure it overrides inline styles if needed */
+        }
+
         .auth-prompt {
             background-color: white;
             padding: 30px;
@@ -879,9 +884,13 @@
                     currentUserEmail = user.email; // Assign to global variable
                     currentUserIdSpan.textContent = currentUserEmail || 'Anonymous User'; // Display email or 'Anonymous User'
                     userIdDisplay.classList.remove('hidden');
-                    mainContainer.classList.remove('hidden'); // Show main content
-                    authOverlay.classList.add('hidden'); // Hide auth overlay
+                    
+                    // Explicitly manage display property for main content and overlay
+                    mainContainer.style.display = 'block'; // Or 'flex' if that's its intended layout
+                    mainContainer.classList.remove('hidden'); // Ensure hidden class is removed
+                    
                     authOverlay.style.display = 'none'; // Explicitly hide the overlay
+                    authOverlay.classList.add('hidden'); // Ensure hidden class is added
 
                     // Prefill Email field from auth, make it readonly
                     customerEmailInput.value = currentUserEmail || ''; 
@@ -896,9 +905,14 @@
                     currentUserId = null; // Assign to global variable
                     currentUserEmail = null; // Assign to global variable
                     userIdDisplay.classList.add('hidden');
-                    mainContainer.classList.add('hidden'); // Hide main content
-                    authOverlay.classList.remove('hidden'); // Show auth overlay
+                    
+                    // Explicitly manage display property for main content and overlay
+                    mainContainer.style.display = 'none'; // Hide main content
+                    mainContainer.classList.add('hidden'); // Ensure hidden class is added
+                    
                     authOverlay.style.display = 'flex'; // Explicitly show the overlay
+                    authOverlay.classList.remove('hidden'); // Ensure hidden class is removed
+                    
                     // Clear prefilled fields if logged out
                     customerNameInput.value = '';
                     customerEmailInput.value = '';
