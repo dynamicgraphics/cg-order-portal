@@ -20,7 +20,7 @@
         .container {
             @apply bg-white shadow-lg rounded-xl p-6 md:p-8 w-full max-w-4xl space-y-6;
         }
-        input[type="number"]::-webkit-inner-spin-button,
+        input[type="number"]::-webkit-inner-spian-button,
         input[type="number"]::-webkit-outer-spin-button {
             -webkit-appearance: none;
             margin: 0;
@@ -572,7 +572,8 @@
                         if (existingItemIndex > -1) {
                             currentOrder[existingItemIndex].quantity += quantity;
                         } else {
-                            currentOrder.push({
+                            // Changed from push() to unshift() to add to the top
+                            currentOrder.unshift({ 
                                 id: productToAdd.id,
                                 title: productToAdd.title || '', // Ensure string
                                 sku: productToAdd.sku || '',     // Ensure string
@@ -635,23 +636,21 @@
                 });
 
                 if (!response.ok) {
-                    const errorData = await response.json();
-                    console.error('Cloud Function Error:', errorData);
-                    throw new Error(`Cloud Function responded with status ${response.status}: ${errorData.message || 'Unknown error'}`);
+                    const errorData = await response.json(); // Attempt to parse error response
+                    const errorMessage = errorData.message || `Server error: ${response.status} ${response.statusText}`;
+                    console.error('Order submission failed:', errorMessage);
+                    showMessageBox(`Failed to submit order: ${errorMessage}`);
+                } else {
+                    const successData = await response.json();
+                    console.log('Order submitted successfully:', successData);
+                    showMessageBox('Order submitted successfully! You will receive a confirmation email shortly.');
+                    currentOrder = []; // Clear the order after successful submission
+                    renderOrderList(); // Update the UI
+                    customerNotesInput.value = ''; // Clear notes
                 }
-
-                showMessageBox('Order submitted successfully! You will receive a confirmation email shortly.');
-                // Clear the form and order
-                currentOrder = [];
-                renderOrderList(); // Re-render and update totals (will clear them)
-                searchInput.value = '';
-                searchResultsDiv.innerHTML = '';
-                customerNameInput.value = '';
-                customerEmailInput.value = '';
-                customerNotesInput.value = '';
             } catch (error) {
-                console.error('Failed to submit order:', error);
-                showMessageBox('Failed to submit order. Please try again or contact support.');
+                console.error('Error submitting order:', error);
+                showMessageBox('An error occurred while submitting your order. Please check your internet connection and try again.');
             } finally {
                 submitOrderButton.textContent = 'Submit Order';
                 submitOrderButton.disabled = false;
@@ -661,9 +660,8 @@
         // --- INITIALIZATION ---
         document.addEventListener('DOMContentLoaded', () => {
             attachEventListeners();
-            renderOrderList(); // Render empty order list and hide totals on load
-            // DO NOT fetchProductCatalog() here initially. It's called after successful password entry.
-            // If you remove password protection, move fetchProductCatalog() here.
+            // The product catalog will be fetched after successful password entry
+            // renderOrderList(); // Initial render of an empty order list
         });
     </script>
 </body>
