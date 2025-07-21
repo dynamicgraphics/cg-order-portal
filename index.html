@@ -229,7 +229,8 @@
             storageBucket: "cg-portal-backend.firebasestorage.app",
             messagingSenderId: "543604960285",
             appId: "1:543604960285:web:03b481d610a5eb2fdcaaf4",
-            measurementId: "G-TFK67F6RPG"
+            // Removed measurementId to prevent Analytics referrer error
+            // measurementId: "G-TFK67F6RPG" 
         };
 
 
@@ -624,10 +625,10 @@
             try {
                 if (isLoginMode) {
                     await signInWithEmailAndPassword(auth, email, password);
-                    // No showMessageBox here, let onAuthStateChanged handle UI transition
+                    showMessageBox('Login successful!'); // Re-added success message
                 } else {
                     await createUserWithEmailAndPassword(auth, email, password);
-                    // No showMessageBox here, let onAuthStateChanged handle UI transition
+                    showMessageBox('Account created successfully! You are now logged in.'); // Re-added success message
                 }
             } catch (error) {
                 let errorMessage = 'An unknown error occurred.';
