@@ -5,8 +5,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>CG Weekly Ordering Portal</title>
     <!-- Favicon -->
-    <!-- Replace 'favicon.ico' or 'path/to/your/favicon.png' with your actual favicon file path -->
-    <!-- For a quick placeholder, you can use an emoji as a favicon: data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🛒</text></svg> -->
     <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>⚙️</text></svg>">
     
     <!-- Tailwind CSS CDN -->
@@ -48,8 +46,8 @@
             border: 2px solid #edf2f7;
         }
 
-        /* Styles for password overlay */
-        #passwordOverlay {
+        /* Styles for authentication overlay/modal */
+        #authOverlay {
             position: fixed;
             top: 0;
             left: 0;
@@ -62,36 +60,36 @@
             z-index: 100;
             flex-direction: column;
         }
-        .password-prompt {
+        .auth-prompt {
             background-color: white;
             padding: 30px;
             border-radius: 10px;
             text-align: center;
             box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+            width: 90%;
+            max-width: 400px;
         }
-        .password-prompt input {
+        .auth-prompt input {
             padding: 10px;
-            margin: 15px 0;
+            margin: 10px 0;
             border: 1px solid #ccc;
             border-radius: 5px;
-            width: 80%;
-            max-width: 250px;
+            width: 100%;
             display: block;
-            margin-left: auto;
-            margin-right: auto;
         }
-        .password-prompt button {
+        .auth-prompt button {
             background-color: #4CAF50;
             color: white;
             padding: 10px 20px;
             border-radius: 5px;
             cursor: pointer;
             transition: background-color 0.3s;
+            margin-top: 15px;
         }
-        .password-prompt button:hover {
+        .auth-prompt button:hover {
             background-color: #45a049;
         }
-        .password-prompt p {
+        .auth-prompt p {
             color: red;
             margin-top: 10px;
         }
@@ -104,20 +102,30 @@
     </style>
 </head>
 <body>
-    <!-- Password Protection Overlay -->
-    <div id="passwordOverlay">
-        <div class="password-prompt">
-            <h2 class="text-2xl font-bold mb-4">Enter Password to Access Portal</h2>
-            <input type="password" id="portalPassword" placeholder="Enter password">
-            <button id="passwordSubmit">Submit</button>
-            <p id="passwordError" class="hidden text-sm"></p>
+    <!-- Authentication Overlay -->
+    <div id="authOverlay" class="hidden">
+        <div class="auth-prompt">
+            <h2 id="authTitle" class="text-2xl font-bold mb-4">Login to Access Portal</h2>
+            <input type="email" id="authEmail" placeholder="Email" autocomplete="email">
+            <input type="password" id="authPassword" placeholder="Password" autocomplete="current-password">
+            <button id="authSubmit">Login</button>
+            <p id="authError" class="hidden text-sm"></p>
+            <p class="mt-4 text-gray-600">
+                <span id="toggleAuthModeText">Don't have an account?</span> 
+                <button id="toggleAuthMode" class="text-blue-600 hover:underline font-semibold">Sign Up</button>
+            </p>
         </div>
-        <!-- Removed the note about client-side password protection -->
     </div>
 
     <!-- Main content container - initially hidden -->
     <div class="container hidden">
         <h1 class="text-3xl font-bold text-gray-800 text-center mb-6">CG Weekly Order Portal</h1>
+
+        <!-- User ID Display -->
+        <div id="userIdDisplay" class="text-sm text-gray-600 text-center mb-4 hidden">
+            Logged in as: <span id="currentUserId" class="font-mono text-xs">Loading...</span>
+            <button id="logoutButton" class="ml-2 px-3 py-1 bg-red-500 text-white rounded-lg text-xs hover:bg-red-600 transition duration-200">Logout</button>
+        </div>
 
         <!-- Message Box -->
         <div id="messageBox" class="hidden fixed inset-0 bg-gray-600 bg-opacity-75 flex items-center justify-center z-50">
@@ -149,13 +157,13 @@
 
         <!-- Order List Section -->
         <div class="mb-6 bg-green-50 p-4 rounded-lg">
-            <h2 class="text-2xl font-bold text-gray-800 mb-4">Your Order</h2>
+            <h2 class="text-2xl font-bold text-gray-800 mb-4">Your Current Order</h2>
             <div id="orderList" class="order-list-scroll border border-gray-200 rounded-lg divide-y divide-gray-200">
                 <div class="p-4 text-gray-500 text-center" id="emptyOrderMessage">No items in your order yet.</div>
                 <!-- Order items will be dynamically inserted here -->
             </div>
             
-            <!-- NEW: Order Totals Summary Section -->
+            <!-- Order Totals Summary Section -->
             <div id="orderTotalsSummary" class="bg-white border border-gray-200 rounded-lg p-4 mt-4 hidden">
                 <h3 class="text-xl font-bold text-gray-800 mb-3">Order Totals:</h3>
                 <p class="text-gray-700 mb-1"><strong>Total Quantity (excluding "Glow in the Dark"):</strong> <span id="totalNonGlow" class="total-quantity-portal">0</span></p>
@@ -176,7 +184,7 @@
                 <div>
                     <label for="customerEmail" class="block text-gray-700 font-semibold mb-2">Your Email:</label>
                     <input type="email" id="customerEmail" placeholder="john.doe@example.com"
-                           class="w-full p-3 border border-gray-300 rounded-lg focus:ring-purple-500 focus:border-purple-500 shadow-sm">
+                           class="w-full p-3 border border-gray-300 rounded-lg focus:ring-purple-500 focus:border-purple-500 shadow-sm" readonly>
                 </div>
             </div>
             <div class="mb-6">
@@ -190,27 +198,43 @@
                 Submit Order
             </button>
         </div>
+
+        <!-- Order History Section -->
+        <div class="mb-6 bg-yellow-50 p-4 rounded-lg">
+            <h2 class="text-2xl font-bold text-gray-800 mb-4">Your Order History</h2>
+            <div id="orderHistoryList" class="order-list-scroll border border-gray-200 rounded-lg divide-y divide-gray-200">
+                <div class="p-4 text-gray-500 text-center" id="emptyOrderHistoryMessage">No past orders found.</div>
+                <!-- Order history items will be dynamically inserted here -->
+            </div>
+        </div>
     </div>
 
-    <script>
+    <!-- Firebase SDKs -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, collection, addDoc, query, onSnapshot, serverTimestamp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+        // --- GLOBAL FIREBASE VARIABLES (Provided by Canvas Environment) ---
+        // These variables are populated by the Canvas environment for Firebase integration.
+        // DO NOT modify these declarations.
+        const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
+        const firebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : {};
+        const initialAuthToken = typeof __initial_auth_token !== 'undefined' ? __initial_auth_token : null;
+
+        // Initialize Firebase
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+        const auth = getAuth(app);
+
+        let currentUserId = null; // To store the authenticated user's UID
+        let currentUserEmail = null; // To store the authenticated user's email
+
         // --- CONFIGURATION ---
-        // Shopify Storefront API is not used for product search in this version.
         const SHOPIFY_STORE_DOMAIN = 'dynamic.graphics'; 
         const SHOPIFY_STOREFRONT_ACCESS_TOKEN = 'DUMMY_TOKEN_NOT_USED'; 
-
-        // --- GOOGLE CLOUD FUNCTION ENDPOINT ---
-        // !!! IMPORTANT: THIS URL HAS BEEN UPDATED TO THE NEW FUNCTION IN YOUR 'CG Portal Backend' PROJECT.
         const GOOGLE_CLOUD_FUNCTION_URL = 'https://send-order-email-543604960285.us-central1.run.app'; 
-
-        // --- GOOGLE SHEET CSV URL FOR PRODUCT CATALOG ---
-        // This is the published CSV URL from your Google Sheet with part data.
         const GOOGLE_SHEET_CSV_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vRJeafxZBqtfXhW91V849PmPbr1C0ExZmnvfQ_410tdo4PPDvXNPHC44VrBEd3G7nRpPulT-XC6R79X/pub?gid=1341072506&single=true&output=csv';
-
-        // --- BASIC CLIENT-SIDE PASSWORD PROTECTION (NOT SECURE FOR SENSITIVE DATA) ---
-        // Change 'yourpassword' to your desired password.
-        const PORTAL_PASSWORD = 'Mole man'; 
-
-        // NEW: Envelope Specific Configuration (must match Cloud Function)
         const ENVELOPE_SKU = 'CG-SE1';
 
         // --- GLOBAL VARIABLES & CACHED ELEMENTS ---
@@ -232,24 +256,37 @@
         const messageText = document.getElementById('messageText');
         const closeMessageBoxButton = document.getElementById('closeMessageBox');
 
-        // Password related elements
-        const passwordOverlay = document.getElementById('passwordOverlay');
-        const portalPasswordInput = document.getElementById('portalPassword');
-        const passwordSubmitButton = document.getElementById('passwordSubmit');
-        const passwordError = document.getElementById('passwordError');
+        // Authentication related elements
+        const authOverlay = document.getElementById('authOverlay');
+        const authTitle = document.getElementById('authTitle');
+        const authEmailInput = document.getElementById('authEmail');
+        const authPasswordInput = document.getElementById('authPassword');
+        const authSubmitButton = document.getElementById('authSubmit');
+        const authError = document.getElementById('authError');
+        const toggleAuthMode = document.getElementById('toggleAuthMode');
+        const toggleAuthModeText = document.getElementById('toggleAuthModeText');
         const mainContainer = document.querySelector('.container'); // Get the main container
 
-        // NEW: Order Totals Summary Elements
+        // Order Totals Summary Elements
         const orderTotalsSummaryDiv = document.getElementById('orderTotalsSummary');
         const totalNonGlowSpan = document.getElementById('totalNonGlow');
         const totalGlowSpan = document.getElementById('totalGlow');
         const totalEnvelopeSpan = document.getElementById('totalEnvelope');
 
+        // Elements for Order History and User ID
+        const userIdDisplay = document.getElementById('userIdDisplay');
+        const currentUserIdSpan = document.getElementById('currentUserId');
+        const logoutButton = document.getElementById('logoutButton');
+        const orderHistoryListDiv = document.getElementById('orderHistoryList');
+        const emptyOrderHistoryMessage = document.getElementById('emptyOrderHistoryMessage');
+
+        let isLoginMode = true; // State for login/signup toggle
+
 
         // --- UTILITY FUNCTIONS ---
 
         /**
-         * Parses CSV text into an safer array of objects, robustly handling commas within fields.
+         * Parses CSV text into an array of objects, robustly handling commas within fields.
          * Assumes the first row is the header.
          * @param {string} csvText The CSV data as a string.
          * @returns {Array<object>} An array of objects, where each object represents a row.
@@ -305,7 +342,7 @@
                 const csvText = await response.text();
                 productCatalog = parseCSV(csvText);
 
-                // NEW: Add the hardcoded envelope item to the product catalog
+                // Add the hardcoded envelope item to the product catalog
                 const envelopeItem = {
                     id: 'CG-SE1',
                     title: 'Custom Sticker Envelopes',
@@ -419,7 +456,7 @@
         }
 
         /**
-         * NEW: Calculates and updates the order totals summary.
+         * Calculates and updates the order totals summary.
          */
         function updateOrderTotals() {
             let totalQuantityNonGlow = 0;
@@ -441,6 +478,46 @@
             totalEnvelopeSpan.textContent = new Intl.NumberFormat('en-US').format(totalQuantityEnvelope * 1000); // Format in 1,000s
         }
 
+        /**
+         * Renders the order history list.
+         * @param {Array<object>} orders An array of order objects from Firestore.
+         */
+        function renderOrderHistory(orders) {
+            orderHistoryListDiv.innerHTML = ''; // Clear existing list
+            if (orders.length === 0) {
+                emptyOrderHistoryMessage.classList.remove('hidden');
+                orderHistoryListDiv.appendChild(emptyOrderHistoryMessage);
+            } else {
+                emptyOrderHistoryMessage.classList.add('hidden');
+                // Sort orders by timestamp in descending order (newest first)
+                orders.sort((a, b) => (b.timestamp?.toDate() || 0) - (a.timestamp?.toDate() || 0));
+
+                orders.forEach(order => {
+                    const orderDate = order.timestamp ? new Date(order.timestamp.toDate()).toLocaleString() : 'N/A';
+                    const orderItemsHtml = order.order_details.map(item => {
+                        const quantityDisplay = (item.sku === ENVELOPE_SKU) ? `${item.quantity} (in 1,000s)` : item.quantity;
+                        return `
+                            <div class="flex items-center mb-2">
+                                <img src="${item.imageUrl}" alt="${item.title}" class="w-10 h-10 object-contain rounded-md mr-2" onerror="this.onerror=null;this.src='https://placehold.co/40x40/CCCCCC/000000?text=No+Image';">
+                                <p class="text-sm text-gray-700">${item.title} (SKU: ${item.sku}) - Qty: ${quantityDisplay}</p>
+                            </div>
+                        `;
+                    }).join('');
+
+                    const orderHtml = `
+                        <div class="p-4 bg-white hover:bg-gray-50 transition duration-150 border-b border-gray-200 last:border-b-0">
+                            <h4 class="font-bold text-gray-800 mb-2">Order placed by ${order.customer_name} on ${orderDate}</h4>
+                            <p class="text-sm text-gray-600 mb-2">Email: ${order.customer_email}</p>
+                            ${order.customer_notes ? `<p class="text-sm text-gray-600 mb-2">Notes: ${order.customer_notes}</p>` : ''}
+                            <div class="ml-4">
+                                ${orderItemsHtml}
+                            </div>
+                        </div>
+                    `;
+                    orderHistoryListDiv.insertAdjacentHTML('beforeend', orderHtml);
+                });
+            }
+        }
 
         /**
          * Attaches event listeners for various interactions.
@@ -464,13 +541,20 @@
             // Still allow the OK button to dismiss it
             closeMessageBoxButton.addEventListener('click', hideMessageBox);
 
-            // Password protection event listeners
-            passwordSubmitButton.addEventListener('click', checkPassword);
-            portalPasswordInput.addEventListener('keypress', (e) => {
+            // Authentication event listeners
+            authSubmitButton.addEventListener('click', handleAuthSubmit);
+            authEmailInput.addEventListener('keypress', (e) => {
                 if (e.key === 'Enter') {
-                    checkPassword();
+                    authPasswordInput.focus();
                 }
             });
+            authPasswordInput.addEventListener('keypress', (e) => {
+                if (e.key === 'Enter') {
+                    handleAuthSubmit();
+                }
+            });
+            toggleAuthMode.addEventListener('click', toggleAuthForm);
+            logoutButton.addEventListener('click', handleLogout);
         }
 
         /**
@@ -486,27 +570,101 @@
             });
         }
 
-        // --- PASSWORD PROTECTION LOGIC ---
-        function checkPassword() {
-            const enteredPassword = portalPasswordInput.value;
-            if (enteredPassword === PORTAL_PASSWORD) {
-                // Completely remove the password overlay from the DOM
-                if (passwordOverlay && passwordOverlay.parentNode) {
-                    passwordOverlay.parentNode.removeChild(passwordOverlay);
-                }
-                mainContainer.classList.remove('hidden'); // Show the main content
+        // --- AUTHENTICATION LOGIC ---
 
-                // Prefill Name and Email fields
-                customerNameInput.value = 'Joel Pettit';
-                customerEmailInput.value = 'joel@chubblegum.com';
+        /**
+         * Toggles between login and signup forms.
+         */
+        function toggleAuthForm() {
+            isLoginMode = !isLoginMode;
+            authError.classList.add('hidden'); // Clear previous errors
+            authEmailInput.value = '';
+            authPasswordInput.value = '';
 
-                // Load initial data and render if password is correct
-                fetchProductCatalog();
+            if (isLoginMode) {
+                authTitle.textContent = 'Login to Access Portal';
+                authSubmitButton.textContent = 'Login';
+                toggleAuthModeText.textContent = "Don't have an account?";
+                toggleAuthMode.textContent = 'Sign Up';
+                authEmailInput.autocomplete = 'email';
+                authPasswordInput.autocomplete = 'current-password';
             } else {
-                passwordError.textContent = 'Incorrect password. Please try again.';
-                passwordError.classList.remove('hidden');
+                authTitle.textContent = 'Sign Up for Portal Access';
+                authSubmitButton.textContent = 'Sign Up';
+                toggleAuthModeText.textContent = "Already have an account?";
+                toggleAuthMode.textContent = 'Login';
+                authEmailInput.autocomplete = 'new-password'; // Suggest new password for signup
+                authPasswordInput.autocomplete = 'new-password';
             }
-            portalPasswordInput.value = ''; // Clear input
+        }
+
+        /**
+         * Handles login or signup based on the current mode.
+         */
+        async function handleAuthSubmit() {
+            const email = authEmailInput.value.trim();
+            const password = authPasswordInput.value.trim();
+
+            if (!email || !password) {
+                authError.textContent = 'Please enter both email and password.';
+                authError.classList.remove('hidden');
+                return;
+            }
+
+            authSubmitButton.disabled = true;
+            authError.classList.add('hidden');
+
+            try {
+                if (isLoginMode) {
+                    await signInWithEmailAndPassword(auth, email, password);
+                    showMessageBox('Login successful!');
+                } else {
+                    await createUserWithEmailAndPassword(auth, email, password);
+                    showMessageBox('Account created successfully! You are now logged in.');
+                }
+                // Auth state change listener will handle showing the main content
+            } catch (error) {
+                let errorMessage = 'An unknown error occurred.';
+                switch (error.code) {
+                    case 'auth/invalid-email':
+                        errorMessage = 'Invalid email address format.';
+                        break;
+                    case 'auth/user-disabled':
+                        errorMessage = 'Your account has been disabled.';
+                        break;
+                    case 'auth/user-not-found':
+                    case 'auth/wrong-password':
+                        errorMessage = 'Incorrect email or password.';
+                        break;
+                    case 'auth/email-already-in-use':
+                        errorMessage = 'This email is already registered. Try logging in.';
+                        break;
+                    case 'auth/weak-password':
+                        errorMessage = 'Password is too weak. Please use at least 6 characters.';
+                        break;
+                    default:
+                        console.error('Firebase Auth Error:', error);
+                        errorMessage = `Authentication failed: ${error.message}`;
+                }
+                authError.textContent = errorMessage;
+                authError.classList.remove('hidden');
+            } finally {
+                authSubmitButton.disabled = false;
+            }
+        }
+
+        /**
+         * Handles user logout.
+         */
+        async function handleLogout() {
+            try {
+                await signOut(auth);
+                showMessageBox('You have been logged out.');
+                // onAuthStateChanged will handle UI changes
+            } catch (error) {
+                console.error('Error logging out:', error);
+                showMessageBox('Failed to log out. Please try again.');
+            }
         }
 
         // --- EVENT HANDLERS ---
@@ -591,11 +749,12 @@
         }
 
         /**
-         * Handles the order submission. Sends order data to a Google Cloud Function.
+         * Handles the order submission. Sends order data to a Google Cloud Function and saves to Firestore.
          */
         async function handleSubmitOrder() {
             const customerName = customerNameInput.value.trim();
-            const customerEmail = customerEmailInput.value.trim();
+            const customerEmail = customerEmailInput.value.trim(); // This will now be pre-filled from auth
+
             const customerNotes = customerNotesInput.value.trim();
 
             if (currentOrder.length === 0) {
@@ -627,6 +786,7 @@
             submitOrderButton.disabled = true;
 
             try {
+                // 1. Send email via Google Cloud Function
                 const response = await fetch(GOOGLE_CLOUD_FUNCTION_URL, {
                     method: 'POST',
                     headers: {
@@ -636,20 +796,34 @@
                 });
 
                 if (!response.ok) {
-                    const errorData = await response.json(); // Attempt to parse error response
+                    const errorData = await response.json(); 
                     const errorMessage = errorData.message || `Server error: ${response.status} ${response.statusText}`;
-                    console.error('Order submission failed:', errorMessage);
+                    console.error('Order submission failed (Cloud Function):', errorMessage);
                     showMessageBox(`Failed to submit order: ${errorMessage}`);
-                } else {
-                    const successData = await response.json();
-                    console.log('Order submitted successfully:', successData);
-                    showMessageBox('Order submitted successfully! You will receive a confirmation email shortly.');
-                    currentOrder = []; // Clear the order after successful submission
-                    renderOrderList(); // Update the UI
-                    customerNotesInput.value = ''; // Clear notes
+                    return; // Stop here if email sending fails
                 }
+
+                // 2. Save order to Firestore
+                if (currentUserId) {
+                    const orderToSave = {
+                        ...orderPayload,
+                        timestamp: serverTimestamp(), // Add server-side timestamp
+                        userId: currentUserId 
+                    };
+                    await addDoc(collection(db, `artifacts/${appId}/users/${currentUserId}/orders`), orderToSave);
+                    console.log('Order saved to Firestore successfully!');
+                } else {
+                    console.warn('User not authenticated, skipping Firestore save.');
+                }
+
+                console.log('Order submitted successfully!');
+                showMessageBox('Order submitted successfully! You will receive a confirmation email shortly.');
+                currentOrder = []; // Clear the order after successful submission
+                renderOrderList(); // Update the UI
+                customerNotesInput.value = ''; // Clear notes
+
             } catch (error) {
-                console.error('Error submitting order:', error);
+                console.error('Error submitting order or saving to Firestore:', error);
                 showMessageBox('An error occurred while submitting your order. Please check your internet connection and try again.');
             } finally {
                 submitOrderButton.textContent = 'Submit Order';
@@ -657,11 +831,77 @@
             }
         }
 
+        /**
+         * Listens for real-time updates to the user's order history from Firestore.
+         */
+        function listenForOrderHistory() {
+            if (!currentUserId) {
+                console.warn('Cannot listen for order history: User not authenticated.');
+                return;
+            }
+
+            const ordersCollectionRef = collection(db, `artifacts/${appId}/users/${currentUserId}/orders`);
+            const q = query(ordersCollectionRef); // No orderBy to avoid index issues
+
+            onSnapshot(q, (snapshot) => {
+                const orders = [];
+                snapshot.forEach(doc => {
+                    orders.push({ id: doc.id, ...doc.data() });
+                });
+                renderOrderHistory(orders);
+            }, (error) => {
+                console.error('Error listening to order history:', error);
+                showMessageBox('Error loading order history. Please try refreshing the page.');
+            });
+        }
+
         // --- INITIALIZATION ---
         document.addEventListener('DOMContentLoaded', () => {
             attachEventListeners();
-            // The product catalog will be fetched after successful password entry
-            // renderOrderList(); // Initial render of an empty order list
+            renderOrderList(); // Initial render of an empty order list
+
+            // Firebase Authentication Listener
+            onAuthStateChanged(auth, async (user) => {
+                if (user) {
+                    currentUserId = user.uid;
+                    currentUserEmail = user.email; // Get email from authenticated user
+                    currentUserIdSpan.textContent = currentUserEmail || 'Anonymous User'; // Display email or 'Anonymous User'
+                    userIdDisplay.classList.remove('hidden');
+                    mainContainer.classList.remove('hidden'); // Show main content
+                    authOverlay.classList.add('hidden'); // Hide auth overlay
+
+                    // Prefill Name and Email fields if authenticated
+                    customerNameInput.value = 'Joel Pettit'; // Still prefill name
+                    customerEmailInput.value = currentUserEmail || ''; // Prefill email from auth, make it readonly
+
+                    console.log('Firebase authenticated. User ID:', currentUserId, 'Email:', currentUserEmail);
+                    listenForOrderHistory(); // Start listening for history
+                    fetchProductCatalog(); // Fetch catalog after auth
+                } else {
+                    console.log('No Firebase user signed in. Showing authentication prompt.');
+                    currentUserId = null;
+                    currentUserEmail = null;
+                    userIdDisplay.classList.add('hidden');
+                    mainContainer.classList.add('hidden'); // Hide main content
+                    authOverlay.classList.remove('hidden'); // Show auth overlay
+                    // Clear prefilled fields if logged out
+                    customerNameInput.value = '';
+                    customerEmailInput.value = '';
+                    currentOrder = []; // Clear current order on logout
+                    renderOrderList(); // Update current order display
+                    orderHistoryListDiv.innerHTML = '<div class="p-4 text-gray-500 text-center" id="emptyOrderHistoryMessage">No past orders found.</div>'; // Clear history
+                }
+            });
+
+            // Attempt anonymous sign-in initially if no custom token is provided by the environment.
+            // This ensures a user ID is always available for Firestore even without email/password login.
+            // If a user later logs in with email/password, their session will switch.
+            if (!initialAuthToken && !auth.currentUser) {
+                signInAnonymously(auth).catch(error => {
+                    console.error('Anonymous sign-in failed:', error);
+                    showMessageBox('Failed to sign in anonymously. Some features may be limited.');
+                });
+            }
         });
     </script>
 </body>
