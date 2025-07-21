@@ -214,7 +214,8 @@
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
         import { getAuth, onAuthStateChanged, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
         import { getFirestore, collection, addDoc, query, onSnapshot, serverTimestamp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
-        import { getAnalytics } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-analytics.js";
+        // Removed import for getAnalytics to prevent the referrer error initially
+        // import { getAnalytics } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-analytics.js"; 
 
         // --- GLOBAL FIREBASE VARIABLES (Provided by Canvas Environment) ---
         // The appId is provided by the Canvas environment.
@@ -284,7 +285,7 @@
 
         let isLoginMode = true; // State for login/signup toggle
 
-        let app, db, auth, analytics; // Declare Firebase instances globally
+        let app, db, auth; // Removed analytics from global declaration
         let currentUserId = null; // To store the authenticated user's UID
         let currentUserEmail = null; // To store the authenticated user's email
 
@@ -869,7 +870,8 @@
             app = initializeApp(firebaseConfig);
             auth = getAuth(app);
             db = getFirestore(app);
-            analytics = getAnalytics(app); // Initialize analytics
+            // Removed analytics initialization to prevent referrer error
+            // analytics = getAnalytics(app); 
 
             onAuthStateChanged(auth, async (user) => {
                 if (user) {
