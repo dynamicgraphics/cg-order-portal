@@ -212,15 +212,28 @@
     <!-- Firebase SDKs -->
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-        import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getAuth, signInAnonymously, onAuthStateChanged, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
         import { getFirestore, collection, addDoc, query, onSnapshot, serverTimestamp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+        import { getAnalytics } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-analytics.js"; // Import getAnalytics
 
         // --- GLOBAL FIREBASE VARIABLES (Provided by Canvas Environment) ---
         // These variables are populated by the Canvas environment for Firebase integration.
         // DO NOT modify these declarations.
         const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
-        const firebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : {};
-        const initialAuthToken = typeof __initial_auth_token !== 'undefined' ? __initial_auth_token : null;
+        // const firebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : {}; // Removed dynamic parsing
+        // const initialAuthToken = typeof __initial_auth_token !== 'undefined' ? __initial_auth_token : null; // Removed
+
+        // Your web app's Firebase configuration (hardcoded as provided by user)
+        const firebaseConfig = {
+            apiKey: "AIzaSyBdp15BtxFu-VPkuOdkiX1WyXgAMLrj124",
+            authDomain: "cg-portal-backend.firebaseapp.com",
+            projectId: "cg-portal-backend",
+            storageBucket: "cg-portal-backend.firebasestorage.app",
+            messagingSenderId: "543604960285",
+            appId: "1:543604960285:web:03b481d610a5eb2fdcaaf4",
+            measurementId: "G-TFK67F6RPG"
+        };
+
 
         // --- CONFIGURATION ---
         const SHOPIFY_STORE_DOMAIN = 'dynamic.graphics'; 
@@ -274,7 +287,7 @@
 
         let isLoginMode = true; // State for login/signup toggle
 
-        let app, db, auth; // Declare Firebase instances globally
+        let app, db, auth, analytics; // Declare Firebase instances globally
         let currentUserId = null; // To store the authenticated user's UID
         let currentUserEmail = null; // To store the authenticated user's email
 
@@ -856,18 +869,11 @@
             attachEventListeners();
             renderOrderList(); // Initial render of an empty order list
 
-            // Firebase Initialization and Auth Listener
-            // Check if firebaseConfig has projectId before initializing
-            if (!firebaseConfig.projectId) {
-                console.error('Firebase configuration error: "projectId" not found in __firebase_config. Please ensure your Canvas environment is correctly configured with Firebase.');
-                showMessageBox('Firebase setup error: Missing project ID. Please contact support or ensure your Canvas environment is properly configured for Firebase.');
-                return; // Stop execution if Firebase cannot be initialized
-            }
-
-            // Initialize Firebase instances only once projectId is confirmed
+            // Initialize Firebase instances using the provided config
             app = initializeApp(firebaseConfig);
             auth = getAuth(app);
             db = getFirestore(app);
+            analytics = getAnalytics(app); // Initialize analytics
 
             onAuthStateChanged(auth, async (user) => {
                 if (user) {
@@ -902,10 +908,10 @@
                 }
             });
 
-            // Attempt anonymous sign-in initially if no custom token is provided by the environment.
+            // Attempt anonymous sign-in initially if no user is logged in via email/password.
             // This ensures a user ID is always available for Firestore even without email/password login.
             // If a user later logs in with email/password, their session will switch.
-            if (!initialAuthToken && !auth.currentUser) {
+            if (!auth.currentUser) { // Check if no user is currently authenticated
                 signInAnonymously(auth).catch(error => {
                     console.error('Anonymous sign-in failed:', error);
                     showMessageBox('Failed to sign in anonymously. Some features may be limited.');
