@@ -713,21 +713,21 @@
             const quantityUnit = (product.sku === ENVELOPE_SKU) ? ' (x1000)' : ''; // Add unit for envelope
 
             return `
-                <div class="flex flex-col sm:flex-row items-center bg-gray-50 border border-gray-200 rounded-lg p-4 shadow-sm">
-                    <img src="${product.imageUrl}" alt="${product.title}" class="w-16 h-16 sm:w-24 sm:h-24 object-contain rounded-lg mr-4 mb-4 sm:mb-0 flex-shrink-0 min-w-0" onerror="this.onerror=null;this.src='https://placehold.co/100x100/CCCCCC/000000?text=No+Image';">
-                    <div class="flex-grow text-center sm:text-left min-w-0">
-                        <h3 class="font-bold text-gray-800 break-words w-full">${product.title}</h3>
+                <div class="w-full sm:w-64 lg:w-72 flex flex-col items-center bg-gray-50 border border-gray-200 rounded-lg p-4 shadow-sm text-center">
+                    <img src="${product.imageUrl}" alt="${product.title}" class="w-24 h-24 object-contain rounded-lg mb-4 flex-shrink-0" onerror="this.onerror=null;this.src='https://placehold.co/100x100/CCCCCC/000000?text=No+Image';">
+                    <div class="flex-grow w-full"> <!-- Use w-full to ensure text takes full width -->
+                        <h3 class="font-bold text-gray-800 break-words">${product.title}</h3>
                         <p class="text-sm text-gray-600">SKU: ${product.sku}</p>
                     </div>
-                    <div class="flex flex-col items-center mt-4 sm:mt-0 flex-shrink-0 sm:flex-row gap-2"> <!-- Changed to flex-col on mobile, sm:flex-row on small-medium and up -->
+                    <div class="flex flex-col items-center mt-4 w-full gap-2"> <!-- Quantity and Add button -->
                         <input type="number" value="${initialQuantity}" min="${minQuantity}"
-                               class="w-full sm:w-20 p-2 border border-gray-300 rounded-lg text-center quantity-input" <!-- w-full on mobile, sm:w-20 on sm -->
+                               class="w-full p-2 border border-gray-300 rounded-lg text-center quantity-input"
                                id="qty-${uniqueId}"
                                data-product-id="${productId}"
                                data-product-title="${product.title}"
                                data-product-sku="${product.sku}"
                                data-product-image="${product.imageUrl}">
-                        <button class="w-full sm:w-auto px-3 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition duration-200 add-to-order-btn" <!-- w-full on mobile, sm:w-auto on sm -->
+                        <button class="w-full px-3 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition duration-200 add-to-order-btn"
                                 data-product-id="${productId}">
                             Add${quantityUnit}
                         </button>
