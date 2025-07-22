@@ -187,7 +187,8 @@
             left: 50%;
             transform: translateX(-50%);
             z-index: 50; /* Above main content, below message box */
-            @apply bg-blue-600 text-white px-6 py-3 rounded-full shadow-lg font-semibold text-lg hover:bg-blue-700 transition duration-200;
+            /* Updated styling for a more prominent tab look */
+            @apply bg-indigo-600 text-white py-4 px-8 rounded-full shadow-xl font-extrabold text-xl uppercase hover:bg-indigo-700 transition duration-200 flex items-center gap-2;
         }
 
         /* Styles for the new full-screen order history modal */
@@ -344,7 +345,12 @@
     </div>
 
     <!-- Floating Order History Button (Mobile Only) -->
-    <button id="floatingOrderHistoryBtn" class="lg:hidden">Order History</button>
+    <button id="floatingOrderHistoryBtn" class="lg:hidden">
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M4 6h16M4 10h16M4 14h16M4 18h16" />
+        </svg>
+        Order History
+    </button>
 
     <!-- Full-Screen Order History Modal (Mobile Only) -->
     <div id="orderHistoryModal" class="hidden">
