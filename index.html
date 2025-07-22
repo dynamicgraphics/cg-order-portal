@@ -492,13 +492,18 @@
         const SHOPIFY_STORE_DOMAIN = 'dynamic.graphics'; 
         const SHOPIFY_STOREFRONT_ACCESS_TOKEN = 'DUMMY_TOKEN_NOT_USED'; 
         const GOOGLE_CLOUD_FUNCTION_URL = 'https://send-order-email-543604960285.us-central1.run.app'; 
-        const GOOGLE_SHEET_CSV_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vRJeafxZBqtfXhW91V849PmPbr1C0ExMmnvfQ_410tdo4PPDvXNPHC44VrBEd3G7nRpPulT-XC6R79X/pub?gid=1341072506&single=true&output=csv';
+        // Updated Google Sheet URL based on user's latest input
+        const GOOGLE_SHEET_CSV_URL = 'https://docs.google.com/spreadsheets/d/1Drd3ucjYoD2Xm8DaSjbBRTUQqRf1dbfH77XHgNIJSi4/pub?gid=1341072506&single=true&output=csv';
         const ENVELOPE_SKU = 'CG-SE1';
         const ADMIN_PROOF_EMAIL = 'admin@example.com'; // IMPORTANT: Replace with your actual admin email for receiving proofs
 
         // --- GLOBAL VARIABLES & CACHED ELEMENTS ---
         let currentOrder = []; // Stores items added to the order
         let productCatalog = []; // Will store the product data fetched from the Google Sheet
+
+        // Removed the temporary hardcoded productCatalog.
+        // The productCatalog will now be fetched from GOOGLE_SHEET_CSV_URL by fetchProductCatalog().
+
 
         const searchInput = document.getElementById('partSearch');
         const searchButton = document.getElementById('searchButton');
@@ -1445,7 +1450,7 @@
             renderOrderList(); // Initial render of an empty order list
 
             // Initialize Firebase instances using the provided config
-            app = initializeApp(firebaseConfig);
+            app = initializeApp(firebaseConfig); /* FIXED: Changed 'firebase' to 'firebaseConfig' */
             auth = getAuth(app);
             db = getFirestore(app);
             // Removed import for getAnalytics to prevent the referrer error initially
