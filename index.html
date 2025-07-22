@@ -497,8 +497,6 @@
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
         import { getAuth, onAuthStateChanged, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
         import { getFirestore, collection, addDoc, query, onSnapshot, serverTimestamp, doc, getDoc, setDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
-        // Removed import for getAnalytics to prevent the referrer error initially
-        // import { getAnalytics } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-analytics.js"; 
 
         // --- GLOBAL FIREBASE VARIABLES (Provided by Canvas Environment) ---
         // The appId is provided by the Canvas environment.
@@ -512,14 +510,10 @@
             storageBucket: "cg-portal-backend.firebase-storage.app",
             messagingSenderId: "543604960285",
             appId: "1:543604960285:web:03b481d610a5eb2fdcaaf4",
-            // Removed measurementId to prevent Analytics referrer error
-            // measurementId: "G-TFK67F6RPG" 
         };
 
 
         // --- CONFIGURATION ---
-        const SHOPIFY_STORE_DOMAIN = 'dynamic.graphics'; 
-        const SHOPIFY_STOREFRONT_ACCESS_TOKEN = 'DUMMY_TOKEN_NOT_USED'; 
         const GOOGLE_CLOUD_FUNCTION_URL = 'https://send-order-email-543604960285.us-central1.run.app'; 
         // This URL should be obtained by "Publish to web" as CSV from your Google Sheet.
         const GOOGLE_SHEET_CSV_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vRJeafxZBqtfXhW91V849PmPbr1C0ExZmnvfQ_410tdo4PPDvXNPHC44VrBEd3G7nRpPulT-XC6R79X/pub?gid=1341072506&single=true&output=csv';
@@ -590,7 +584,7 @@
 
         let isLoginMode = true; // State for login/signup toggle
 
-        let app, db, auth; // Removed analytics from global declaration
+        let app, db, auth; 
         let currentUserId = null; // To store the authenticated user's UID
         let currentUserEmail = null; // To store the authenticated user's email
         let currentUserName = null; // To store the authenticated user's name
@@ -946,7 +940,6 @@
                     handleSearch();
                 }
             });
-            // submitOrderButton.addEventListener('click', handleSubmitOrder); // This is now triggered by approveProofBtn
             
             // Allow clicking anywhere on the message box overlay to dismiss it
             messageBox.addEventListener('click', (e) => {
@@ -1260,25 +1253,23 @@
             }
 
             let proofHtml = `
-                <h4 class="text-xl font-semibold mb-3">Customer Information:</h4>
+                <h4 class="text-xl font-semibold mb-2">Customer Information:</h4>
                 <p class="text-gray-700 mb-1"><strong>Name:</strong> ${customerName}</p>
-                <p class="text-gray-700 mb-3"><strong>Email:</strong> ${customerEmail}</p>
+                <p class="text-gray-700 mb-2"><strong>Email:</strong> ${customerEmail}</p>
             `;
             if (customerNotes) {
                 proofHtml += `<p class="text-gray-700 mb-3"><strong>Notes:</strong> ${customerNotes}</p>`;
             }
 
-            proofHtml += `<h4 class="text-xl font-semibold mb-3">Order Details:</h4>`;
+            proofHtml += `<h4 class="text-xl font-semibold mb-2">Order Details:</h4>`;
             // The proofContent div now handles its own flex/wrap, so we just append items
             proofHtml += `<div class="flex flex-wrap justify-center gap-4">`; // Start a new flex container for items
             currentOrder.forEach(item => {
                 const quantityDisplay = (item.sku === ENVELOPE_SKU) ? `${item.quantity} (in 1,000s)` : item.quantity;
                 proofHtml += `
                     <div class="proof-item">
-                        <div class="flex flex-col items-center">
-                            <img src="${item.imageUrl}" alt="${item.title}" onerror="this.onerror=null;this.src='https://placehold.co/50x50/CCCCCC/000000?text=No+Image';" class="proof-item-img">
-                            <p class="text-xs text-gray-600 mt-1">${item.sku}</p>
-                        </div>
+                        <img src="${item.imageUrl}" alt="${item.title}" onerror="this.onerror=null;this.src='https://placehold.co/50x50/CCCCCC/000000?text=No+Image';" class="proof-item-img">
+                        <p class="text-xs text-gray-600 mt-1">${item.sku}</p>
                         <div class="proof-item-details">
                             <p class="font-medium text-gray-800">${item.title}</p>
                             <p class="text-sm text-gray-600">Qty: ${quantityDisplay}</p>
@@ -1516,8 +1507,6 @@
             app = initializeApp(firebaseConfig); 
             auth = getAuth(app);
             db = getFirestore(app);
-            // Removed import for getAnalytics to prevent the referrer error initially
-            // analytics = getAnalytics(app); 
 
             onAuthStateChanged(auth, async (user) => {
                 if (user) {
