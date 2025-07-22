@@ -20,7 +20,7 @@
             font-family: 'Inter', sans-serif;
             /* Added overflow-x-hidden to prevent horizontal scrolling */
             /* Added padding-bottom to ensure space for the fixed floating button */
-            @apply bg-gray-100 flex items-center justify-center min-h-screen p-4 overflow-x-hidden pb-[100px]; 
+            @apply bg-gray-100 flex items-center justify-center min-h-screen p-4 overflow-x-hidden pb-[120px]; 
         }
         .container {
             /* Removed max-w-7xl to allow full width on small screens */
@@ -187,11 +187,13 @@
             bottom: 0; /* Position at the very bottom */
             left: 50%;
             transform: translateX(-50%);
-            z-index: 999; /* Very high z-index */
+            z-index: 1000; /* Very high z-index */
             /* Updated styling for a more prominent tab look */
-            @apply bg-indigo-600 text-white py-6 px-16 rounded-t-3xl rounded-b-none shadow-2xl font-extrabold text-xl uppercase hover:bg-indigo-700 transition duration-200 flex items-center justify-center gap-2 border-x-4 border-t-4 border-blue-300;
+            background-image: linear-gradient(to right, #4f46e5, #2563eb); /* Indigo to Blue gradient */
+            @apply text-white py-7 px-20 rounded-t-3xl rounded-b-none shadow-2xl font-extrabold text-xl uppercase hover:opacity-90 transition duration-200 flex items-center justify-center gap-2 border-x-4 border-t-4 border-blue-300;
             width: auto; /* Allow width to adjust to content */
-            min-width: 280px; /* Ensure a minimum width for the tab */
+            min-width: 300px; /* Ensure a minimum width for the tab */
+            box-shadow: 0 -8px 16px rgba(0, 0, 0, 0.3), 0 -4px 8px rgba(0, 0, 0, 0.2); /* Stronger shadow */
         }
 
         /* Styles for the new full-screen order history modal */
