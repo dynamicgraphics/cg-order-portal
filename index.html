@@ -18,8 +18,8 @@
         /* Custom styles for Inter font and general layout */
         body {
             font-family: 'Inter', sans-serif;
-            /* Removed padding-bottom as the floating button is now on the side */
-            @apply bg-gray-100 flex items-center justify-center min-h-screen p-4 overflow-x-hidden; 
+            /* Added padding-right to ensure space for the fixed floating button on the right */
+            @apply bg-gray-100 flex items-center justify-center min-h-screen p-4 pr-[60px] overflow-x-hidden; 
         }
         .container {
             /* Removed max-w-7xl to allow full width on small screens */
@@ -187,13 +187,25 @@
             top: 50%; /* Vertically center */
             transform: translateY(-50%); /* Adjust for perfect vertical centering */
             z-index: 1000; /* Very high z-index */
-            /* Updated styling for a more prominent, rounded tab look on the right */
-            background-image: linear-gradient(to right, #4f46e5, #2563eb); /* Indigo to Blue gradient */
-            @apply text-white py-3 px-8 rounded-l-full rounded-r-none shadow-xl font-extrabold text-lg uppercase hover:opacity-90 transition duration-200 flex items-center justify-center gap-2 border-y-4 border-l-4 border-blue-300;
+            /* Updated styling for a more prominent, rounded vertical tab look on the right */
+            background-image: linear-gradient(to bottom, #4f46e5, #2563eb); /* Vertical gradient */
+            @apply text-white py-8 px-4 rounded-l-full rounded-r-none shadow-xl font-extrabold text-lg hover:opacity-90 transition duration-200 flex flex-col items-center justify-center gap-2 border-y-4 border-l-4 border-blue-300;
             width: auto; /* Allow width to adjust to content */
-            min-width: 150px; /* Adjust minimum width for a side tab */
+            min-height: 150px; /* Ensure a minimum height for the vertical tab */
             box-shadow: -8px 0 16px rgba(0, 0, 0, 0.3), -4px 0 8px rgba(0, 0, 0, 0.2); /* Stronger shadow on the left */
+            writing-mode: vertical-lr; /* Makes text vertical from left to right */
+            text-align: center; /* Center text within its vertical space */
+            white-space: nowrap; /* Prevent text from wrapping */
+            text-transform: none; /* Remove uppercase */
         }
+        /* Adjust the icon size and margin for vertical layout */
+        #floatingOrderHistoryBtn svg {
+            margin-bottom: 8px; /* Space between icon and text */
+            margin-right: 0; /* Remove horizontal margin */
+            height: 24px; /* Ensure icon size is consistent */
+            width: 24px;
+        }
+
 
         /* Styles for the new full-screen order history modal */
         #orderHistoryModal {
