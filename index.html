@@ -526,12 +526,12 @@
                     const orderDate = order.timestamp ? new Date(order.timestamp.toDate()).toLocaleString() : 'N/A';
                     const orderHtml = `
                         <div class="order-history-item" data-order-id="${order.id}">
-                            <div class="order-history-header">
+                            <button class="order-history-header w-full text-left py-2 px-0 bg-transparent border-none flex justify-between items-center" data-order-id="${order.id}">
                                 <h4 class="font-bold text-gray-800">${orderDate}</h4>
-                                <button class="text-blue-600 hover:underline text-sm toggle-details-btn" data-order-id="${order.id}">
+                                <span class="text-blue-600 hover:underline text-sm toggle-details-btn" data-order-id="${order.id}">
                                     View Details
-                                </button>
-                            </div>
+                                </span>
+                            </button>
                             <div id="order-details-${order.id}" class="order-history-details hidden">
                                 <p class="text-sm text-gray-600 mb-2">Ordered by: ${order.customer_name} (${order.customer_email})</p>
                                 ${order.customer_notes ? `<p class="text-sm text-gray-600 mb-2">Notes: ${order.customer_notes}</p>` : ''}
@@ -564,7 +564,7 @@
             const detailsDiv = document.getElementById(`order-details-${orderId}`);
             if (detailsDiv) {
                 detailsDiv.classList.toggle('hidden');
-                const toggleButton = document.querySelector(`.toggle-details-btn[data-order-id="${orderId}"]`);
+                const toggleButton = document.querySelector(`.order-history-header[data-order-id="${orderId}"] .toggle-details-btn`);
                 if (toggleButton) {
                     toggleButton.textContent = detailsDiv.classList.contains('hidden') ? 'View Details' : 'Hide Details';
                 }
@@ -650,10 +650,14 @@
             // Store orders globally for re-order functionality
             window.orderHistoryList = orders; 
 
-            document.querySelectorAll('.toggle-details-btn').forEach(button => {
+            // Event listener for the entire header (button) to toggle details
+            document.querySelectorAll('.order-history-header').forEach(button => {
                 button.addEventListener('click', (e) => {
-                    const orderId = e.target.dataset.orderId;
-                    toggleOrderDetails(orderId);
+                    // Ensure the click is not on the reorder button itself, if we add line item reorder later
+                    if (!e.target.classList.contains('reorder-btn')) {
+                        const orderId = e.currentTarget.dataset.orderId; // Use currentTarget as the listener is on the button
+                        toggleOrderDetails(orderId);
+                    }
                 });
             });
 
