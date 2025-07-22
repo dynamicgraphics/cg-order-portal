@@ -106,14 +106,17 @@
         }
         /* Style for order history items */
         .order-history-item {
-            @apply bg-white border-b border-gray-200 last:border-b-0; /* Removed padding here */
+            @apply bg-white border-b border-gray-200 last:border-b-0; 
         }
         .order-history-header {
-            /* This button now acts as the compact clickable area */
-            @apply w-full text-left py-3 px-4 bg-gray-50 hover:bg-gray-100 transition duration-150 border-none flex justify-between items-center rounded-lg;
+            /* This button now acts as the compact clickable area, matching search button style */
+            @apply w-full text-left py-3 px-4 bg-blue-600 text-white rounded-lg font-semibold hover:bg-blue-700 transition duration-200 shadow-md flex justify-between items-center;
+        }
+        .order-history-header h4 {
+            @apply text-white; /* Ensure text color is white for the button */
         }
         .order-history-details {
-            @apply mt-2 pl-4 border-l-2 border-gray-200 py-2; /* Added vertical padding */
+            @apply mt-2 pl-4 border-l-2 border-gray-200 py-2; 
         }
         .reorder-btn {
             /* Enhanced styling for re-order button */
@@ -529,8 +532,8 @@
                     const orderHtml = `
                         <div class="order-history-item" data-order-id="${order.id}">
                             <button class="order-history-header" data-order-id="${order.id}">
-                                <h4 class="font-bold text-gray-800">${orderDate}</h4>
-                                <span class="text-blue-600 hover:underline text-sm toggle-details-btn" data-order-id="${order.id}">
+                                <h4 class="font-bold">${orderDate}</h4>
+                                <span class="toggle-details-btn" data-order-id="${order.id}">
                                     View Details
                                 </span>
                             </button>
