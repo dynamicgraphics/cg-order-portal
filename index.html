@@ -23,7 +23,8 @@
         }
         .container {
             /* Removed max-w-7xl to allow full width on small screens */
-            @apply bg-white shadow-lg rounded-xl p-4 sm:p-6 w-full mx-auto flex flex-col md:flex-row gap-6 justify-between;
+            /* Added overflow-x-hidden to the container as well */
+            @apply bg-white shadow-lg rounded-xl p-4 sm:p-6 w-full mx-auto flex flex-col md:flex-row gap-6 justify-between overflow-x-hidden;
         }
         /* Applied space-y-6 directly to column divs */
         .column-content {
@@ -232,7 +233,8 @@
                 <div id="loadingIndicator" class="hidden text-center mt-4 text-blue-600 font-medium">
                     Searching...
                 </div>
-                <div id="searchResults" class="mt-4 grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div id="searchResults" class="mt-4 grid grid-cols-1 sm:grid-cols-2 gap-4 overflow-x-hidden">
+                    <!-- Added overflow-x-hidden to searchResults -->
                     <!-- Search results will be dynamically inserted here -->
                 </div>
                 <div id="noResults" class="hidden text-center text-gray-500 mt-4">No products found. Please try a different search term.</div>
@@ -515,15 +517,15 @@
                         <h3 class="font-bold text-gray-800 break-words w-full">${product.title}</h3>
                         <p class="text-sm text-gray-600">SKU: ${product.sku}</p>
                     </div>
-                    <div class="flex items-center mt-4 sm:mt-0 flex-shrink-0 flex-nowrap">
+                    <div class="flex flex-col items-center mt-4 sm:mt-0 flex-shrink-0 sm:flex-row gap-2"> <!-- Changed to flex-col on mobile, sm:flex-row on small-medium and up -->
                         <input type="number" value="${initialQuantity}" min="${minQuantity}"
-                               class="w-auto max-w-[80px] p-2 border border-gray-300 rounded-l-lg text-center quantity-input"
+                               class="w-full sm:w-20 p-2 border border-gray-300 rounded-lg text-center quantity-input" <!-- w-full on mobile, sm:w-20 on sm -->
                                id="qty-${uniqueId}"
                                data-product-id="${product.id}"
                                data-product-title="${product.title}"
                                data-product-sku="${product.sku}"
                                data-product-image="${product.imageUrl}">
-                        <button class="px-3 py-2 bg-blue-500 text-white rounded-r-lg hover:bg-blue-600 transition duration-200 add-to-order-btn"
+                        <button class="w-full sm:w-auto px-3 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition duration-200 add-to-order-btn" <!-- w-full on mobile, sm:w-auto on sm -->
                                 data-product-id="${product.id}">
                             Add${quantityUnit}
                         </button>
