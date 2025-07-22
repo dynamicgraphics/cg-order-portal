@@ -179,6 +179,52 @@
         .reorder-btn:hover {
             background-color: #7c3aed; /* hover:bg-purple-700 */
         }
+
+        /* Styles for the new floating Order History button */
+        #floatingOrderHistoryBtn {
+            position: fixed;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 50; /* Above main content, below message box */
+            @apply bg-blue-600 text-white px-6 py-3 rounded-full shadow-lg font-semibold text-lg hover:bg-blue-700 transition duration-200;
+        }
+
+        /* Styles for the new full-screen order history modal */
+        #orderHistoryModal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.9); /* Darker overlay */
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 100; /* Above floating button */
+            flex-direction: column;
+            padding: 1rem; /* Padding for content inside modal */
+        }
+        #orderHistoryModal.hidden {
+            display: none !important;
+        }
+        #orderHistoryModalContent {
+            background-color: white;
+            padding: 1.5rem;
+            border-radius: 0.75rem; /* rounded-xl */
+            width: 100%;
+            max-width: 600px; /* Max width for readability */
+            max-height: 90vh; /* Limit height to prevent overflow on very small screens */
+            overflow-y: auto; /* Enable scrolling within the modal content */
+            position: relative; /* For positioning close button */
+            @apply shadow-2xl;
+        }
+        #orderHistoryModalCloseBtn {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            @apply bg-red-500 text-white rounded-full h-8 w-8 flex items-center justify-center text-xl font-bold hover:bg-red-600 transition duration-200;
+        }
     </style>
 </head>
 <body>
@@ -285,25 +331,29 @@
             </div>
         </div>
 
-        <!-- Right Column (Order History) -->
-        <div class="w-full md:max-w-sm flex-shrink-0 column-content">
-            <!-- Order History Section -->
+        <!-- Right Column (Order History) - Hidden on mobile, block on md and up -->
+        <div class="w-full md:max-w-sm flex-shrink-0 column-content hidden md:block">
             <div class="bg-yellow-50 p-4 rounded-lg">
-                <!-- New clickable header for mobile -->
-                <button id="orderHistoryToggle" class="w-full flex justify-between items-center text-2xl font-bold text-gray-800 mb-4 md:hidden">
-                    <span>Your Order History</span>
-                    <span id="orderHistoryChevron" class="transform transition-transform duration-200">▼</span>
-                </button>
-                <!-- Existing h2 for desktop -->
-                <h2 class="text-2xl font-bold text-gray-800 mb-4 hidden md:block">Your Order History</h2>
-
-                <!-- Content to be toggled on mobile -->
-                <div id="orderHistoryContent" class="hidden md:block"> <!-- Hidden on mobile by default, block on md and up -->
-                    <div id="orderHistoryList" class="order-list-scroll border border-gray-200 rounded-lg">
-                        <div class="p-4 text-gray-500 text-center" id="emptyOrderHistoryMessage">No past orders found.</div>
-                        <!-- Order history items will be dynamically inserted here -->
-                    </div>
+                <h2 class="text-2xl font-bold text-gray-800 mb-4">Your Order History</h2>
+                <div id="orderHistoryListDesktop" class="order-list-scroll border border-gray-200 rounded-lg">
+                    <div class="p-4 text-gray-500 text-center" id="emptyOrderHistoryMessageDesktop">No past orders found.</div>
+                    <!-- Order history items will be dynamically inserted here -->
                 </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Floating Order History Button (Mobile Only) -->
+    <button id="floatingOrderHistoryBtn" class="md:hidden">Order History</button>
+
+    <!-- Full-Screen Order History Modal (Mobile Only) -->
+    <div id="orderHistoryModal" class="hidden">
+        <div id="orderHistoryModalContent">
+            <button id="orderHistoryModalCloseBtn">X</button>
+            <h2 class="text-2xl font-bold text-gray-800 mb-4">Your Order History</h2>
+            <div id="orderHistoryListMobile" class="order-list-scroll border border-gray-200 rounded-lg">
+                <div class="p-4 text-gray-500 text-center" id="emptyOrderHistoryMessageMobile">No past orders found.</div>
+                <!-- Order history items will be dynamically inserted here -->
             </div>
         </div>
     </div>
@@ -381,13 +431,17 @@
         const userIdDisplay = document.getElementById('userIdDisplay');
         const currentUserNameSpan = document.getElementById('currentUserName'); // Changed from currentUserIdSpan
         const logoutButton = document.getElementById('logoutButton');
-        const orderHistoryListDiv = document.getElementById('orderHistoryList');
-        const emptyOrderHistoryMessage = document.getElementById('emptyOrderHistoryMessage');
+        
+        // Updated references for order history lists
+        const orderHistoryListDesktop = document.getElementById('orderHistoryListDesktop');
+        const emptyOrderHistoryMessageDesktop = document.getElementById('emptyOrderHistoryMessageDesktop');
+        const orderHistoryListMobile = document.getElementById('orderHistoryListMobile');
+        const emptyOrderHistoryMessageMobile = document.getElementById('emptyOrderHistoryMessageMobile');
 
         // New elements for mobile order history toggle
-        const orderHistoryToggleBtn = document.getElementById('orderHistoryToggle');
-        const orderHistoryChevron = document.getElementById('orderHistoryChevron');
-        const orderHistoryContent = document.getElementById('orderHistoryContent');
+        const floatingOrderHistoryBtn = document.getElementById('floatingOrderHistoryBtn');
+        const orderHistoryModal = document.getElementById('orderHistoryModal');
+        const orderHistoryModalCloseBtn = document.getElementById('orderHistoryModalCloseBtn');
 
 
         let isLoginMode = true; // State for login/signup toggle
@@ -598,60 +652,93 @@
          * @param {Array<object>} orders An array of order objects from Firestore.
          */
         function renderOrderHistory(orders) {
-            orderHistoryListDiv.innerHTML = ''; // Clear existing list
+            // Render for desktop view
+            orderHistoryListDesktop.innerHTML = '';
             if (orders.length === 0) {
-                emptyOrderHistoryMessage.classList.remove('hidden');
-                orderHistoryListDiv.appendChild(emptyOrderHistoryMessage);
+                emptyOrderHistoryMessageDesktop.classList.remove('hidden');
+                orderHistoryListDesktop.appendChild(emptyOrderHistoryMessageDesktop);
             } else {
-                emptyOrderHistoryMessage.classList.add('hidden');
-                // Sort orders by timestamp in descending order (newest first)
+                emptyOrderHistoryMessageDesktop.classList.add('hidden');
                 orders.sort((a, b) => (b.timestamp?.toDate() || 0) - (a.timestamp?.toDate() || 0));
-
                 orders.forEach(order => {
-                    const orderDate = order.timestamp ? new Date(order.timestamp.toDate()).toLocaleString() : 'N/A';
-                    const orderHtml = `
-                        <div class="order-history-card" data-order-id="${order.id}">
-                            <button class="order-history-header" data-order-id="${order.id}">
-                                <h4 class="font-bold">${orderDate}</h4>
-                                <span class="toggle-details-btn" data-order-id="${order.id}">
-                                    View Details
-                                </span>
-                            </button>
-                            <div id="order-details-${order.id}" class="order-history-details hidden">
-                                <p class="text-sm text-gray-600 mb-2">Ordered by: ${order.customer_name} (${order.customer_email})</p>
-                                ${order.customer_notes ? `<p class="text-sm text-gray-600 mb-2">Notes: ${order.customer_notes}</p>` : ''}
-                                <div class="ml-4">
-                                    ${order.order_details.map(item => {
-                                        const quantityDisplay = (item.sku === ENVELOPE_SKU) ? `${item.quantity} (in 1,000s)` : item.quantity;
-                                        return `
-                                            <div class="flex items-center mb-2">
-                                                <img src="${item.imageUrl}" alt="${item.title}" class="w-10 h-10 object-contain rounded-md mr-2" onerror="this.onerror=null;this.src='https://placehold.co/40x40/CCCCCC/000000?text=No+Image';">
-                                                <p class="text-sm text-gray-700">${item.title} (SKU: ${item.sku}) - Qty: ${quantityDisplay}</p>
-                                            </div>
-                                        `;
-                                    }).join('')}
-                                </div>
-                                <button class="reorder-btn" data-order-id="${order.id}">Re-order This</button>
-                            </div>
-                        </div>
-                    `;
-                    orderHistoryListDiv.insertAdjacentHTML('beforeend', orderHtml);
+                    const orderHtml = createOrderHistoryCardHtml(order);
+                    orderHistoryListDesktop.insertAdjacentHTML('beforeend', orderHtml);
                 });
-                attachOrderHistoryEventListeners(orders); // Attach event listeners for history items
             }
+
+            // Render for mobile modal view
+            orderHistoryListMobile.innerHTML = '';
+            if (orders.length === 0) {
+                emptyOrderHistoryMessageMobile.classList.remove('hidden');
+                orderHistoryListMobile.appendChild(emptyOrderHistoryMessageMobile);
+            } else {
+                emptyOrderHistoryMessageMobile.classList.add('hidden');
+                orders.sort((a, b) => (b.timestamp?.toDate() || 0) - (a.timestamp?.toDate() || 0));
+                orders.forEach(order => {
+                    const orderHtml = createOrderHistoryCardHtml(order);
+                    orderHistoryListMobile.insertAdjacentHTML('beforeend', orderHtml);
+                });
+            }
+            attachOrderHistoryEventListeners(orders); // Attach event listeners for history items for both lists
         }
+
+        /**
+         * Helper function to create HTML for an order history card.
+         * @param {object} order The order object.
+         * @returns {string} HTML string.
+         */
+        function createOrderHistoryCardHtml(order) {
+            const orderDate = order.timestamp ? new Date(order.timestamp.toDate()).toLocaleString() : 'N/A';
+            return `
+                <div class="order-history-card" data-order-id="${order.id}">
+                    <button class="order-history-header" data-order-id="${order.id}">
+                        <h4 class="font-bold">${orderDate}</h4>
+                        <span class="toggle-details-btn" data-order-id="${order.id}">
+                            View Details
+                        </span>
+                    </button>
+                    <div id="order-details-${order.id}" class="order-history-details hidden">
+                        <p class="text-sm text-gray-600 mb-2">Ordered by: ${order.customer_name} (${order.customer_email})</p>
+                        ${order.customer_notes ? `<p class="text-sm text-gray-600 mb-2">Notes: ${order.customer_notes}</p>` : ''}
+                        <div class="ml-4">
+                            ${order.order_details.map(item => {
+                                const quantityDisplay = (item.sku === ENVELOPE_SKU) ? `${item.quantity} (in 1,000s)` : item.quantity;
+                                return `
+                                    <div class="flex items-center mb-2">
+                                        <img src="${item.imageUrl}" alt="${item.title}" class="w-10 h-10 object-contain rounded-md mr-2" onerror="this.onerror=null;this.src='https://placehold.co/40x40/CCCCCC/000000?text=No+Image';">
+                                        <p class="text-sm text-gray-700">${item.title} (SKU: ${item.sku}) - Qty: ${quantityDisplay}</p>
+                                    </div>
+                                `;
+                            }).join('')}
+                        </div>
+                        <button class="reorder-btn" data-order-id="${order.id}">Re-order This</button>
+                    </div>
+                </div>
+            `;
+        }
+
 
         /**
          * Toggles the visibility of order details in history.
          * @param {string} orderId The ID of the order to toggle.
          */
         function toggleOrderDetails(orderId) {
-            const detailsDiv = document.getElementById(`order-details-${orderId}`);
-            if (detailsDiv) {
-                detailsDiv.classList.toggle('hidden');
-                const toggleButton = document.querySelector(`.order-history-header[data-order-id="${orderId}"] .toggle-details-btn`);
+            // Find and toggle details in both desktop and mobile lists
+            const detailsDivDesktop = document.querySelector(`#orderHistoryListDesktop #order-details-${orderId}`);
+            const detailsDivMobile = document.querySelector(`#orderHistoryListMobile #order-details-${orderId}`);
+
+            if (detailsDivDesktop) {
+                detailsDivDesktop.classList.toggle('hidden');
+                const toggleButton = document.querySelector(`#orderHistoryListDesktop .order-history-header[data-order-id="${orderId}"] .toggle-details-btn`);
                 if (toggleButton) {
-                    toggleButton.textContent = detailsDiv.classList.contains('hidden') ? 'View Details' : 'Hide Details';
+                    toggleButton.textContent = detailsDivDesktop.classList.contains('hidden') ? 'View Details' : 'Hide Details';
+                }
+            }
+            if (detailsDivMobile) {
+                detailsDivMobile.classList.toggle('hidden');
+                const toggleButton = document.querySelector(`#orderHistoryListMobile .order-history-header[data-order-id="${orderId}"] .toggle-details-btn`);
+                if (toggleButton) {
+                    toggleButton.textContent = detailsDivMobile.classList.contains('hidden') ? 'View Details' : 'Hide Details';
                 }
             }
         }
@@ -666,6 +753,7 @@
                 currentOrder = JSON.parse(JSON.stringify(orderToReorder.order_details)); // Deep copy to avoid reference issues
                 renderOrderList();
                 showMessageBox('Order items from history have been added to your current order!');
+                orderHistoryModal.classList.add('hidden'); // Close modal after re-order
             } else {
                 showMessageBox('Could not find this order in history to re-order.');
             }
@@ -713,10 +801,18 @@
             toggleAuthMode.addEventListener('click', toggleAuthForm);
             logoutButton.addEventListener('click', handleLogout);
 
-            // New: Mobile order history toggle
-            orderHistoryToggleBtn.addEventListener('click', () => {
-                orderHistoryContent.classList.toggle('hidden');
-                orderHistoryChevron.classList.toggle('rotate-180'); // Rotate chevron
+            // New: Floating Order History button and modal
+            floatingOrderHistoryBtn.addEventListener('click', () => {
+                orderHistoryModal.classList.remove('hidden');
+            });
+            orderHistoryModalCloseBtn.addEventListener('click', () => {
+                orderHistoryModal.classList.add('hidden');
+            });
+            // Allow clicking outside the modal content to close it
+            orderHistoryModal.addEventListener('click', (e) => {
+                if (e.target === orderHistoryModal) {
+                    orderHistoryModal.classList.add('hidden');
+                }
             });
         }
 
@@ -1134,7 +1230,9 @@
                     customerEmailInput.value = '';
                     currentOrder = []; // Clear current order on logout
                     renderOrderList(); // Update current order display
-                    orderHistoryListDiv.innerHTML = '<div class="p-4 text-gray-500 text-center" id="emptyOrderHistoryMessage">No past orders found.</div>'; // Clear history
+                    // Clear both desktop and mobile history lists
+                    orderHistoryListDesktop.innerHTML = '<div class="p-4 text-gray-500 text-center" id="emptyOrderHistoryMessageDesktop">No past orders found.</div>';
+                    orderHistoryListMobile.innerHTML = '<div class="p-4 text-gray-500 text-center" id="emptyOrderHistoryMessageMobile">No past orders found.</div>';
                 }
             });
         });
