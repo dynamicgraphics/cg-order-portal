@@ -246,6 +246,67 @@
             right: 10px;
             @apply bg-red-500 text-white rounded-full h-8 w-8 flex items-center justify-center text-xl font-bold hover:bg-red-600 transition duration-200;
         }
+
+        /* Styles for the new Proof Modal */
+        #proofModal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.9); /* Darker overlay */
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 1002; /* Higher than other modals */
+            flex-direction: column;
+            padding: 1rem;
+        }
+        #proofModal.hidden {
+            display: none !important;
+        }
+        #proofModalContent {
+            background-color: white; /* Changed to white background */
+            padding: 1.5rem;
+            border-radius: 0.75rem; /* rounded-xl */
+            width: 100%;
+            max-width: 600px; /* Max width for readability */
+            max-height: 90vh; /* Limit height to prevent overflow on very small screens */
+            overflow-y: auto; /* Enable scrolling within the modal content */
+            position: relative;
+            @apply shadow-2xl;
+        }
+        #closeProofModal {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            @apply bg-gray-300 text-gray-700 rounded-full h-8 w-8 flex items-center justify-center text-xl font-bold hover:bg-gray-400 transition duration-200;
+        }
+        /* Proof item styling */
+        #proofContent img.proof-item-img { /* Specific class for proof images */
+            max-width: 60px; /* Smaller images in proof */
+            max-height: 60px;
+            object-fit: contain;
+            border-radius: 0.25rem;
+            border: 1px solid #e2e8f0; /* Subtle border for images */
+            box-shadow: 0 1px 2px rgba(0,0,0,0.1); /* Small shadow for images */
+        }
+        #proofContent .proof-item {
+            display: flex;
+            align-items: flex-start; /* Align items to the top */
+            margin-bottom: 0.75rem; /* Increased spacing between items */
+            padding: 0.5rem;
+            border-bottom: 1px solid #eee;
+        }
+        #proofContent .proof-item:last-child {
+            border-bottom: none;
+        }
+        #proofContent .proof-item-details {
+            margin-left: 1rem; /* Space between image/sku and details */
+        }
+        #proofContent .proof-item-details p {
+            margin-bottom: 0.25rem; /* Small spacing for text lines */
+        }
     </style>
 </head>
 <body>
@@ -345,10 +406,16 @@
                               class="w-full p-3 border border-gray-300 rounded-lg focus:ring-purple-500 focus:border-purple-500 shadow-sm"></textarea>
                 </div>
 
-                <button id="submitOrder"
-                        class="w-full px-6 py-4 bg-purple-600 text-white rounded-lg font-bold text-xl hover:bg-purple-700 transition duration-200 shadow-lg">
-                    Submit Order
-                </button>
+                <div class="flex flex-col sm:flex-row gap-4">
+                    <button id="generateProofBtn"
+                            class="w-full sm:w-1/2 px-6 py-4 bg-indigo-600 text-white rounded-lg font-bold text-xl hover:bg-indigo-700 transition duration-200 shadow-lg">
+                        Generate Proof & Review
+                    </button>
+                    <button id="submitOrder"
+                            class="w-full sm:w-1/2 px-6 py-4 bg-purple-600 text-white rounded-lg font-bold text-xl hover:bg-purple-700 transition duration-200 shadow-lg hidden">
+                        Submit Order
+                    </button>
+                </div>
             </div>
         </div>
 
@@ -377,6 +444,21 @@
             <div id="orderHistoryListMobile" class="order-list-scroll border border-gray-200 rounded-lg">
                 <div class="p-4 text-gray-500 text-center" id="emptyOrderHistoryMessageMobile">No past orders found.</div>
                 <!-- Order history items will be dynamically inserted here -->
+            </div>
+        </div>
+    </div>
+
+    <!-- Proof Modal -->
+    <div id="proofModal" class="hidden">
+        <div id="proofModalContent" class="bg-white p-6 rounded-xl shadow-lg max-w-lg w-full text-center space-y-4 relative">
+            <button id="closeProofModal" class="absolute top-2 right-2 text-gray-500 hover:text-gray-800 text-2xl">&times;</button>
+            <h3 class="text-2xl font-bold mb-4">Order Proof for Review</h3>
+            <div id="proofContent" class="text-left max-h-96 overflow-y-auto p-2 border rounded-md bg-white">
+                <!-- Proof details will be inserted here -->
+            </div>
+            <div class="mt-4 flex flex-col sm:flex-row justify-center gap-4">
+                <button id="approveProofBtn" class="px-6 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition duration-200 w-full sm:w-auto">Approve & Submit Order</button>
+                <button id="reviseOrderBtn" class="px-6 py-2 bg-yellow-500 text-white rounded-lg hover:bg-yellow-600 transition duration-200 w-full sm:w-auto">Revise Order</button>
             </div>
         </div>
     </div>
@@ -410,8 +492,9 @@
         const SHOPIFY_STORE_DOMAIN = 'dynamic.graphics'; 
         const SHOPIFY_STOREFRONT_ACCESS_TOKEN = 'DUMMY_TOKEN_NOT_USED'; 
         const GOOGLE_CLOUD_FUNCTION_URL = 'https://send-order-email-543604960285.us-central1.run.app'; 
-        const GOOGLE_SHEET_CSV_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vRJeafxZBqtfXhW91V849PmPbr1C0ExZmnvfQ_410tdo4PPDvXNPHC44VrBEd3G7nRpPulT-XC6R79X/pub?gid=1341072506&single=true&output=csv';
+        const GOOGLE_SHEET_CSV_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vRJeafxZBqtfXhW91V849PmPbr1C0ExMmnvfQ_410tdo4PPDvXNPHC44VrBEd3G7nRpPulT-XC6R79X/pub?gid=1341072506&single=true&output=csv';
         const ENVELOPE_SKU = 'CG-SE1';
+        const ADMIN_PROOF_EMAIL = 'admin@example.com'; // IMPORTANT: Replace with your actual admin email for receiving proofs
 
         // --- GLOBAL VARIABLES & CACHED ELEMENTS ---
         let currentOrder = []; // Stores items added to the order
@@ -465,6 +548,14 @@
         const floatingOrderHistoryBtn = document.getElementById('floatingOrderHistoryBtn');
         const orderHistoryModal = document.getElementById('orderHistoryModal');
         const orderHistoryModalCloseBtn = document.getElementById('orderHistoryModalCloseBtn');
+
+        // New elements for Proofing System
+        const generateProofBtn = document.getElementById('generateProofBtn');
+        const proofModal = document.getElementById('proofModal');
+        const closeProofModal = document.getElementById('closeProofModal');
+        const proofContent = document.getElementById('proofContent');
+        const approveProofBtn = document.getElementById('approveProofBtn');
+        const reviseOrderBtn = document.getElementById('reviseOrderBtn');
 
 
         let isLoginMode = true; // State for login/signup toggle
@@ -792,7 +883,7 @@
                     handleSearch();
                 }
             });
-            submitOrderButton.addEventListener('click', handleSubmitOrder);
+            // submitOrderButton.addEventListener('click', handleSubmitOrder); // This is now triggered by approveProofBtn
             
             // Allow clicking anywhere on the message box overlay to dismiss it
             messageBox.addEventListener('click', (e) => {
@@ -835,6 +926,18 @@
             orderHistoryModal.addEventListener('click', (e) => {
                 if (e.target === orderHistoryModal) {
                     orderHistoryModal.classList.add('hidden');
+                }
+            });
+
+            // Proofing System Event Listeners
+            generateProofBtn.addEventListener('click', generateProofAndShowModal);
+            closeProofModal.addEventListener('click', () => proofModal.classList.add('hidden'));
+            approveProofBtn.addEventListener('click', handleSubmitOrder); // Approve & Submit calls handleSubmitOrder
+            reviseOrderBtn.addEventListener('click', () => proofModal.classList.add('hidden')); // Revise just closes the modal
+            // Allow clicking outside the modal content to close it
+            proofModal.addEventListener('click', (e) => {
+                if (e.target === proofModal) {
+                    proofModal.classList.add('hidden');
                 }
             });
         }
@@ -1074,12 +1177,131 @@
         }
 
         /**
+         * Generates the proof content and displays the proof modal.
+         */
+        function generateProofAndShowModal() {
+            const customerName = customerNameInput.value.trim();
+            const customerEmail = customerEmailInput.value.trim();
+            const customerNotes = customerNotesInput.value.trim();
+
+            if (currentOrder.length === 0) {
+                showMessageBox('Your order is empty. Please add some items before generating a proof.');
+                return;
+            }
+
+            if (!customerName || !customerEmail) {
+                showMessageBox('Please enter your Name and Email to generate a proof.');
+                return;
+            }
+
+            let proofHtml = `
+                <h4 class="text-xl font-semibold mb-3">Customer Information:</h4>
+                <p class="text-gray-700 mb-1"><strong>Name:</strong> ${customerName}</p>
+                <p class="text-gray-700 mb-3"><strong>Email:</strong> ${customerEmail}</p>
+            `;
+            if (customerNotes) {
+                proofHtml += `<p class="text-gray-700 mb-3"><strong>Notes:</strong> ${customerNotes}</p>`;
+            }
+
+            proofHtml += `<h4 class="text-xl font-semibold mb-3">Order Details:</h4>`;
+            currentOrder.forEach(item => {
+                const quantityDisplay = (item.sku === ENVELOPE_SKU) ? `${item.quantity} (in 1,000s)` : item.quantity;
+                proofHtml += `
+                    <div class="proof-item">
+                        <div class="flex flex-col items-center mr-4">
+                            <img src="${item.imageUrl}" alt="${item.title}" onerror="this.onerror=null;this.src='https://placehold.co/60x60/CCCCCC/000000?text=No+Image';" class="proof-item-img">
+                            <p class="text-xs text-gray-600 mt-1">${item.sku}</p>
+                        </div>
+                        <div class="proof-item-details">
+                            <p class="font-medium text-gray-800">${item.title}</p>
+                            <p class="text-sm text-gray-600">Qty: ${quantityDisplay}</p>
+                        </div>
+                    </div>
+                `;
+            });
+
+            proofContent.innerHTML = proofHtml;
+            proofModal.classList.remove('hidden');
+        }
+
+        /**
+         * Generates the HTML content for the admin proof email.
+         * This HTML is designed to be sent as the body of an email.
+         * @param {object} orderPayload The order data.
+         * @param {string} orderId The Firestore document ID for the order.
+         * @returns {string} HTML string for the admin proof.
+         */
+        function generateAdminProofHtml(orderPayload, orderId) {
+            const customerName = orderPayload.customer_name;
+            const customerEmail = orderPayload.customer_email;
+            const customerNotes = orderPayload.customer_notes;
+            const orderDetails = orderPayload.order_details;
+            const orderDate = new Date().toLocaleString(); // Current date for the proof
+
+            let itemsHtml = '';
+            orderDetails.forEach(item => {
+                const quantityDisplay = (item.sku === ENVELOPE_SKU) ? `${item.quantity} (in 1,000s)` : item.quantity;
+                itemsHtml += `
+                    <tr style="vertical-align: top;">
+                        <td style="padding: 8px; border: 1px solid #ddd; text-align: center;">
+                            <img src="${item.imageUrl}" alt="${item.title}" style="max-width: 60px; max-height: 60px; object-fit: contain; border-radius: 4px; border: 1px solid #e2e8f0; box-shadow: 0 1px 2px rgba(0,0,0,0.1); display: block; margin: 0 auto;" onerror="this.onerror=null;this.src='https://placehold.co/60x60/CCCCCC/000000?text=No+Image';">
+                            <p style="font-size: 0.75em; color: #666; margin-top: 4px;">${item.sku}</p>
+                        </td>
+                        <td style="padding: 8px; border: 1px solid #ddd;">${item.sku}</td>
+                        <td style="padding: 8px; border: 1px solid #ddd;">${item.title}</td>
+                        <td style="padding: 8px; border: 1px solid #ddd; text-align: right;">${quantityDisplay}</td>
+                    </tr>
+                `;
+            });
+
+            const notesSection = customerNotes ? `
+                <div style="margin-bottom: 20px;">
+                    <p style="font-weight: bold; color: #333; margin-bottom: 5px;">Notes:</p>
+                    <p style="color: #555;">${customerNotes}</p>
+                </div>
+            ` : '';
+
+            return `
+                <div style="font-family: 'Inter', sans-serif; max-width: 800px; margin: 0 auto; padding: 20px; border: 1px solid #ccc; border-radius: 8px; background-color: #ffffff;">
+                    <h2 style="color: #333; text-align: center; margin-bottom: 20px;">Order Proof</h2>
+                    <div style="display: flex; justify-content: space-between; margin-bottom: 20px; font-size: 0.9em; border-bottom: 1px solid #eee; padding-bottom: 10px;">
+                        <div>
+                            <p style="margin: 0;"><strong>Customer:</strong> ${customerName}</p>
+                            <p style="margin: 0;"><strong>Email:</strong> ${customerEmail}</p>
+                        </div>
+                        <div style="text-align: right;">
+                            <p style="margin: 0;"><strong>Order Date:</strong> ${orderDate}</p>
+                            <p style="margin: 0;"><strong>Order ID:</strong> ${orderId}</p>
+                        </div>
+                    </div>
+                    ${notesSection}
+                    <h3 style="color: #333; margin-top: 30px; margin-bottom: 15px;">Order Items:</h3>
+                    <table style="width: 100%; border-collapse: collapse; border: 1px solid #ddd;">
+                        <thead>
+                            <tr style="background-color: #f2f2f2;">
+                                <th style="padding: 8px; border: 1px solid #ddd; text-align: center; width: 100px;">Image</th>
+                                <th style="padding: 8px; border: 1px solid #ddd; text-align: left;">SKU</th>
+                                <th style="padding: 8px; border: 1px solid #ddd; text-align: left;">Item</th>
+                                <th style="padding: 8px; border: 1px solid #ddd; text-align: right; width: 80px;">Quantity</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${itemsHtml}
+                        </tbody>
+                    </table>
+                    <div style="margin-top: 30px; text-align: center; font-size: 0.8em; color: #777;">
+                        <p>This is an automated proof generated from the CG Weekly Order Portal. Please review carefully.</p>
+                    </div>
+                </div>
+            `;
+        }
+
+        /**
          * Handles the order submission. Sends order data to a Google Cloud Function and saves to Firestore.
          */
         async function handleSubmitOrder() {
             const customerName = customerNameInput.value.trim();
             const customerEmail = customerEmailInput.value.trim(); // This will now be pre-filled from auth
-
             const customerNotes = customerNotesInput.value.trim();
 
             if (currentOrder.length === 0) {
@@ -1092,12 +1314,11 @@
                 return;
             }
 
-            // Prepare payload for the Google Cloud Function
+            // Prepare payload for the Google Cloud Function (for customer confirmation email)
             const orderPayload = {
                 customer_name: customerName,
                 customer_email: customerEmail,
                 customer_notes: customerNotes,
-                // Ensure all fields are explicitly defined as strings/numbers for robustness
                 order_details: currentOrder.map(item => ({
                     id: item.id || '',
                     title: item.title || '',
@@ -1107,52 +1328,90 @@
                 }))
             };
 
-            submitOrderButton.textContent = 'Submitting...';
+            // Disable buttons to prevent multiple submissions
+            approveProofBtn.disabled = true;
+            reviseOrderBtn.disabled = true;
+            generateProofBtn.disabled = true; // Disable generate proof button during submission
             submitOrderButton.disabled = true;
+            submitOrderButton.textContent = 'Submitting...'; // Update text for main button
 
             try {
-                // 1. Send email via Google Cloud Function
-                const response = await fetch(GOOGLE_CLOUD_FUNCTION_URL, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                    },
-                    body: JSON.stringify(orderPayload),
-                });
-
-                if (!response.ok) {
-                    const errorData = await response.json(); 
-                    const errorMessage = errorData.message || `Server error: ${response.status} ${response.statusText}`;
-                    console.error('Order submission failed (Cloud Function):', errorMessage);
-                    showMessageBox(`Failed to submit order: ${errorMessage}`);
-                    return; // Stop here if email sending fails
-                }
-
-                // 2. Save order to Firestore
+                // 1. Save order to Firestore FIRST to get the ID
+                let orderDocRef;
                 if (currentUserId) {
                     const orderToSave = {
                         ...orderPayload,
-                        timestamp: serverTimestamp(), // Add server-side timestamp
-                        userId: currentUserId 
+                        timestamp: serverTimestamp(),
+                        userId: currentUserId
                     };
-                    await addDoc(collection(db, `artifacts/${appId}/users/${currentUserId}/orders`), orderToSave);
-                    console.log('Order saved to Firestore successfully!');
+                    orderDocRef = await addDoc(collection(db, `artifacts/${appId}/users/${currentUserId}/orders`), orderToSave);
+                    console.log('Order saved to Firestore successfully! ID:', orderDocRef.id);
                 } else {
                     console.warn('User not authenticated, skipping Firestore save.');
                 }
 
+                const orderId = orderDocRef ? orderDocRef.id : 'N/A'; // Get the generated ID
+
+                // Generate admin proof HTML with the orderId
+                const adminProofHtml = generateAdminProofHtml(orderPayload, orderId); // Pass orderId
+
+                // Prepare payload for the admin proof email (sent automatically)
+                const adminProofPayload = {
+                    customer_name: customerName,
+                    customer_email: customerEmail,
+                    recipient_email: ADMIN_PROOF_EMAIL, // Send to admin email
+                    subject: `New Order Proof for ${customerName} (${customerEmail}) - Order ID: ${orderId}`, // Custom subject for admin
+                    html_body: adminProofHtml, // Send as HTML body
+                    is_proof: true // Optional flag for the cloud function to handle proof formatting
+                };
+
+                // Send both emails in parallel (or sequentially if preferred)
+                const [customerResponse, adminProofResponse] = await Promise.all([
+                    fetch(GOOGLE_CLOUD_FUNCTION_URL, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(orderPayload), // Customer confirmation
+                    }),
+                    fetch(GOOGLE_CLOUD_FUNCTION_URL, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(adminProofPayload), // Admin proof
+                    })
+                ]);
+
+                if (!customerResponse.ok) {
+                    const errorData = await customerResponse.json(); 
+                    const errorMessage = errorData.message || `Server error: ${customerResponse.status} ${customerResponse.statusText}`;
+                    console.error('Customer email sending failed (Cloud Function):', errorMessage);
+                    showMessageBox(`Failed to send order confirmation: ${errorMessage}`);
+                    return; // Stop here if customer email sending fails
+                }
+
+                if (!adminProofResponse.ok) {
+                    const errorData = await adminProofResponse.json();
+                    const errorMessage = errorData.message || `Server error: ${adminProofResponse.status} ${adminProofResponse.statusText}`;
+                    console.error('Admin proof email sending failed (Cloud Function):', errorMessage);
+                    // Do not block user submission if admin email fails, but log and inform if critical
+                    showMessageBox(`Order submitted, but failed to send proof to admin: ${errorMessage}`);
+                }
+
                 console.log('Order submitted successfully!');
-                showMessageBox('Order submitted successfully! You will receive a confirmation email shortly.');
+                showMessageBox('Order submitted successfully! You will receive a confirmation email shortly. A proof has also been sent to the administrators.');
                 currentOrder = []; // Clear the order after successful submission
                 renderOrderList(); // Update the UI
                 customerNotesInput.value = ''; // Clear notes
+                proofModal.classList.add('hidden'); // Hide proof modal on successful submission
 
             } catch (error) {
                 console.error('Error submitting order or saving to Firestore:', error);
                 showMessageBox('An error occurred while submitting your order. Please check your internet connection and try again.');
             } finally {
-                submitOrderButton.textContent = 'Submit Order';
+                // Re-enable buttons
+                approveProofBtn.disabled = false;
+                reviseOrderBtn.disabled = false;
+                generateProofBtn.disabled = false; // Re-enable generate proof button
                 submitOrderButton.disabled = false;
+                submitOrderButton.textContent = 'Submit Order'; // Reset text for main button
             }
         }
 
