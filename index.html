@@ -10,6 +10,11 @@
     <!-- Tailwind CSS CDN -->
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
+        /* Ensure box-sizing is border-box for all elements to prevent layout issues */
+        *, *::before, *::after {
+            box-sizing: border-box;
+        }
+
         /* Custom styles for Inter font and general layout */
         body {
             font-family: 'Inter', sans-serif;
@@ -512,13 +517,13 @@
                     </div>
                     <div class="flex items-center mt-4 sm:mt-0 flex-shrink-0 flex-nowrap">
                         <input type="number" value="${initialQuantity}" min="${minQuantity}"
-                               class="w-full max-w-[80px] p-2 border border-gray-300 rounded-l-lg text-center quantity-input"
+                               class="w-auto max-w-[80px] p-2 border border-gray-300 rounded-l-lg text-center quantity-input"
                                id="qty-${uniqueId}"
                                data-product-id="${product.id}"
                                data-product-title="${product.title}"
                                data-product-sku="${product.sku}"
                                data-product-image="${product.imageUrl}">
-                        <button class="px-4 py-2 bg-blue-500 text-white rounded-r-lg hover:bg-blue-600 transition duration-200 add-to-order-btn"
+                        <button class="px-3 py-2 bg-blue-500 text-white rounded-r-lg hover:bg-blue-600 transition duration-200 add-to-order-btn"
                                 data-product-id="${product.id}">
                             Add${quantityUnit}
                         </button>
