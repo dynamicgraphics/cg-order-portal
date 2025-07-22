@@ -106,16 +106,18 @@
         }
         /* Style for order history items */
         .order-history-item {
-            @apply p-4 bg-white hover:bg-gray-50 transition duration-150 border-b border-gray-200 last:border-b-0;
+            @apply bg-white border-b border-gray-200 last:border-b-0; /* Removed padding here */
         }
         .order-history-header {
-            @apply flex justify-between items-center cursor-pointer;
+            /* This button now acts as the compact clickable area */
+            @apply w-full text-left py-3 px-4 bg-gray-50 hover:bg-gray-100 transition duration-150 border-none flex justify-between items-center rounded-lg;
         }
         .order-history-details {
-            @apply mt-2 pl-4 border-l-2 border-gray-200;
+            @apply mt-2 pl-4 border-l-2 border-gray-200 py-2; /* Added vertical padding */
         }
         .reorder-btn {
-            @apply px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition duration-200 text-sm mt-2;
+            /* Enhanced styling for re-order button */
+            @apply px-5 py-2 bg-purple-600 text-white rounded-lg font-semibold hover:bg-purple-700 transition duration-200 text-sm mt-3 shadow-md;
         }
     </style>
 </head>
@@ -526,7 +528,7 @@
                     const orderDate = order.timestamp ? new Date(order.timestamp.toDate()).toLocaleString() : 'N/A';
                     const orderHtml = `
                         <div class="order-history-item" data-order-id="${order.id}">
-                            <button class="order-history-header w-full text-left py-2 px-0 bg-transparent border-none flex justify-between items-center" data-order-id="${order.id}">
+                            <button class="order-history-header" data-order-id="${order.id}">
                                 <h4 class="font-bold text-gray-800">${orderDate}</h4>
                                 <span class="text-blue-600 hover:underline text-sm toggle-details-btn" data-order-id="${order.id}">
                                     View Details
