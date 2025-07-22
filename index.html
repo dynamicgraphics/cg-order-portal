@@ -713,8 +713,8 @@
             const quantityUnit = (product.sku === ENVELOPE_SKU) ? ' (x1000)' : ''; // Add unit for envelope
 
             return `
-                <div class="w-full sm:w-64 lg:w-72 flex flex-col items-center bg-gray-50 border border-gray-200 rounded-lg p-4 shadow-sm text-center">
-                    <img src="${product.imageUrl}" alt="${product.title}" class="w-24 h-24 object-contain rounded-lg mb-4 flex-shrink-0" onerror="this.onerror=null;this.src='https://placehold.co/100x100/CCCCCC/000000?text=No+Image';">
+                <div class="w-full sm:w-56 lg:w-64 flex flex-col items-center bg-gray-50 border border-gray-200 rounded-lg p-4 shadow-sm text-center">
+                    <img src="${product.imageUrl}" alt="${product.title}" class="w-20 h-20 object-contain rounded-lg mb-4 flex-shrink-0" onerror="this.onerror=null;this.src='https://placehold.co/100x100/CCCCCC/000000?text=No+Image';">
                     <div class="flex-grow w-full"> <!-- Use w-full to ensure text takes full width -->
                         <h3 class="font-bold text-gray-800 break-words">${product.title}</h3>
                         <p class="text-sm text-gray-600">SKU: ${product.sku}</p>
