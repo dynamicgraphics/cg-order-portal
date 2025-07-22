@@ -19,7 +19,7 @@
         body {
             font-family: 'Inter', sans-serif;
             /* Adjusted padding-right to ensure space for the fixed floating button on the right */
-            @apply bg-gray-100 flex items-center justify-center min-h-screen p-4 pr-[80px] overflow-x-hidden; 
+            @apply bg-gray-100 flex items-center justify-center min-h-screen p-4 pr-[70px] overflow-x-hidden; 
         }
         .container {
             /* Removed max-w-7xl to allow full width on small screens */
@@ -189,12 +189,13 @@
             z-index: 1000; /* Very high z-index */
             /* Updated styling for a more prominent, rounded vertical tab look on the right */
             background-image: linear-gradient(to bottom, #4f46e5, #2563eb); /* Vertical gradient */
-            /* Added rounded-r-md for slight rounding on the right edge */
-            @apply text-white py-8 px-4 rounded-l-full rounded-r-md shadow-xl font-extrabold text-lg hover:opacity-90 transition duration-200 flex flex-col items-center justify-center gap-2 border-y-4 border-l-4 border-blue-300;
+            /* Changed rounded-r-md to rounded-r-full for full rounding on the right edge */
+            @apply text-white py-8 px-4 rounded-l-full rounded-r-full shadow-xl font-extrabold text-lg hover:opacity-90 transition duration-200 flex flex-col items-center justify-center gap-2 border-y-4 border-l-4 border-blue-300;
             width: auto; /* Allow width to adjust to content */
             min-height: 150px; /* Ensure a minimum height for the vertical tab */
-            box-shadow: -8px 0 16px rgba(0, 0, 0, 0.3), -4px 0 8px rgba(0, 0, 0, 0.2); /* Stronger shadow on the left */
-            writing-mode: vertical-rl; /* Makes text vertical from right to left */
+            /* Stronger shadow on the left */
+            box-shadow: -10px 0 20px rgba(0, 0, 0, 0.4), -5px 0 10px rgba(0, 0, 0, 0.3); 
+            writing-mode: vertical-lr; /* Makes text vertical from bottom to top, then left to right */
             text-align: center; /* Center text within its vertical space */
             white-space: nowrap; /* Prevent text from wrapping */
             text-transform: none; /* Remove uppercase */
