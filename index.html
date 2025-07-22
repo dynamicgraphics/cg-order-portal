@@ -284,25 +284,29 @@
         }
         /* Proof item styling */
         #proofContent img.proof-item-img { /* Specific class for proof images */
-            max-width: 60px; /* Smaller images in proof */
-            max-height: 60px;
+            max-width: 80px; /* Slightly larger image */
+            max-height: 80px;
             object-fit: contain;
             border-radius: 0.25rem;
             border: 1px solid #e2e8f0; /* Subtle border for images */
             box-shadow: 0 1px 2px rgba(0,0,0,0.1); /* Small shadow for images */
+            margin-bottom: 0.5rem; /* Space below image */
         }
         #proofContent .proof-item {
             display: flex;
-            align-items: flex-start; /* Align items to the top */
-            margin-bottom: 0.75rem; /* Increased spacing between items */
-            padding: 0.5rem;
+            flex-direction: column; /* Stack items vertically */
+            align-items: center; /* Center horizontally in stacked layout */
+            margin-bottom: 1rem; /* Increased spacing between items */
+            padding: 0.75rem; /* Increased padding */
             border-bottom: 1px solid #eee;
+            text-align: center; /* Center text within the item */
         }
         #proofContent .proof-item:last-child {
             border-bottom: none;
         }
         #proofContent .proof-item-details {
-            margin-left: 1rem; /* Space between image/sku and details */
+            margin-left: 0; /* Remove horizontal margin for stacked layout */
+            margin-top: 0.5rem; /* Space between image and details */
         }
         #proofContent .proof-item-details p {
             margin-bottom: 0.25rem; /* Small spacing for text lines */
@@ -409,7 +413,7 @@
                 <div class="flex flex-col sm:flex-row justify-center gap-4">
                     <button id="generateProofBtn"
                             class="w-full sm:w-1/2 px-6 py-4 bg-indigo-600 text-white rounded-lg font-bold text-xl hover:bg-indigo-700 transition duration-200 shadow-lg">
-                        Generate Proof & Review
+                        Confirm Order & Review
                     </button>
                     <button id="submitOrder"
                             class="w-full sm:w-1/2 px-6 py-4 bg-purple-600 text-white rounded-lg font-bold text-xl hover:bg-purple-700 transition duration-200 shadow-lg hidden">
@@ -452,12 +456,12 @@
     <div id="proofModal" class="hidden">
         <div id="proofModalContent" class="bg-white p-6 rounded-xl shadow-lg max-w_lg w-full text-center space-y-4 relative">
             <button id="closeProofModal" class="absolute top-2 right-2 text-gray-500 hover:text-gray-800 text-2xl">&times;</button>
-            <h3 class="2xl font-bold mb-4">Order Proof for Review</h3>
+            <h3 class="2xl font-bold mb-4">Confirm Your Order</h3>
             <div id="proofContent" class="text-left max-h-96 overflow-y-auto p-2 border rounded-md bg-white">
                 <!-- Proof details will be inserted here -->
             </div>
             <div class="mt-4 flex flex-col sm:flex-row justify-center gap-4">
-                <button id="approveProofBtn" class="px-6 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition duration-200 w-full sm:w-auto">Approve & Submit Order</button>
+                <button id="approveProofBtn" class="px-6 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition duration-200 w-full sm:w-auto">Confirm & Submit Order</button>
                 <button id="reviseOrderBtn" class="px-6 py-2 bg-yellow-500 text-white rounded-lg hover:bg-yellow-600 transition duration-200 w-full sm:w-auto">Revise Order</button>
             </div>
         </div>
@@ -536,7 +540,8 @@
 
         // Elements for Order History and User ID
         const userIdDisplay = document.getElementById('userIdDisplay');
-        const currentUserNameSpan = document.getElementById('currentUserName'); // Changed from currentUserIdSpan
+        // Corrected: Removed the erroneous "document =" assignment
+        const currentUserNameSpan = document.getElementById('currentUserName'); 
         const logoutButton = document.getElementById('logoutButton');
         
         // Updated references for order history lists
@@ -1244,7 +1249,7 @@
                 const quantityDisplay = (item.sku === ENVELOPE_SKU) ? `${item.quantity} (in 1,000s)` : item.quantity;
                 proofHtml += `
                     <div class="proof-item">
-                        <div class="flex flex-col items-center mr-4">
+                        <div class="flex flex-col items-center">
                             <img src="${item.imageUrl}" alt="${item.title}" onerror="this.onerror=null;this.src='https://placehold.co/60x60/CCCCCC/000000?text=No+Image';" class="proof-item-img">
                             <p class="text-xs text-gray-600 mt-1">${item.sku}</p>
                         </div>
