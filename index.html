@@ -104,6 +104,19 @@
             font-weight: 700;    /* font-bold */
             color: #333333;
         }
+        /* Style for order history items */
+        .order-history-item {
+            @apply p-4 bg-white hover:bg-gray-50 transition duration-150 border-b border-gray-200 last:border-b-0;
+        }
+        .order-history-header {
+            @apply flex justify-between items-center cursor-pointer;
+        }
+        .order-history-details {
+            @apply mt-2 pl-4 border-l-2 border-gray-200;
+        }
+        .reorder-btn {
+            @apply px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition duration-200 text-sm mt-2;
+        }
     </style>
 </head>
 <body>
@@ -111,6 +124,8 @@
     <div id="authOverlay" class="hidden">
         <div class="auth-prompt">
             <h2 id="authTitle" class="text-2xl font-bold mb-4">Login to Access Portal</h2>
+            <!-- Name input, hidden by default for login, shown for signup -->
+            <input type="text" id="authName" placeholder="Your Name" class="hidden" autocomplete="name">
             <input type="email" id="authEmail" placeholder="Email" autocomplete="email">
             <input type="password" id="authPassword" placeholder="Password" autocomplete="current-password">
             <button id="authSubmit">Login</button>
@@ -128,7 +143,7 @@
 
         <!-- User ID Display -->
         <div id="userIdDisplay" class="text-sm text-gray-600 text-center mb-4 hidden">
-            Logged in as: <span id="currentUserId" class="font-mono text-xs">Loading...</span>
+            Logged in as: <span id="currentUserName" class="font-mono text-xs">Loading...</span>
             <button id="logoutButton" class="ml-2 px-3 py-1 bg-red-500 text-white rounded-lg text-xs hover:bg-red-600 transition duration-200">Logout</button>
         </div>
 
@@ -218,7 +233,7 @@
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
         import { getAuth, onAuthStateChanged, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-        import { getFirestore, collection, addDoc, query, onSnapshot, serverTimestamp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+        import { getFirestore, collection, addDoc, query, onSnapshot, serverTimestamp, doc, getDoc, setDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
         // Removed import for getAnalytics to prevent the referrer error initially
         // import { getAnalytics } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-analytics.js"; 
 
@@ -268,6 +283,7 @@
         // Authentication related elements
         const authOverlay = document.getElementById('authOverlay');
         const authTitle = document.getElementById('authTitle');
+        const authNameInput = document.getElementById('authName'); // New: Name input
         const authEmailInput = document.getElementById('authEmail');
         const authPasswordInput = document.getElementById('authPassword');
         const authSubmitButton = document.getElementById('authSubmit');
@@ -284,7 +300,7 @@
 
         // Elements for Order History and User ID
         const userIdDisplay = document.getElementById('userIdDisplay');
-        const currentUserIdSpan = document.getElementById('currentUserId');
+        const currentUserNameSpan = document.getElementById('currentUserName'); // Changed from currentUserIdSpan
         const logoutButton = document.getElementById('logoutButton');
         const orderHistoryListDiv = document.getElementById('orderHistoryList');
         const emptyOrderHistoryMessage = document.getElementById('emptyOrderHistoryMessage');
@@ -294,6 +310,7 @@
         let app, db, auth; // Removed analytics from global declaration
         let currentUserId = null; // To store the authenticated user's UID
         let currentUserEmail = null; // To store the authenticated user's email
+        let currentUserName = null; // To store the authenticated user's name
 
 
         // --- UTILITY FUNCTIONS ---
@@ -507,28 +524,65 @@
 
                 orders.forEach(order => {
                     const orderDate = order.timestamp ? new Date(order.timestamp.toDate()).toLocaleString() : 'N/A';
-                    const orderItemsHtml = order.order_details.map(item => {
-                        const quantityDisplay = (item.sku === ENVELOPE_SKU) ? `${item.quantity} (in 1,000s)` : item.quantity;
-                        return `
-                            <div class="flex items-center mb-2">
-                                <img src="${item.imageUrl}" alt="${item.title}" class="w-10 h-10 object-contain rounded-md mr-2" onerror="this.onerror=null;this.src='https://placehold.co/40x40/CCCCCC/000000?text=No+Image';">
-                                <p class="text-sm text-gray-700">${item.title} (SKU: ${item.sku}) - Qty: ${quantityDisplay}</p>
-                            </div>
-                        `;
-                    }).join('');
-
                     const orderHtml = `
-                        <div class="p-4 bg-white hover:bg-gray-50 transition duration-150 border-b border-gray-200 last:border-b-0">
-                            <h4 class="font-bold text-gray-800 mb-2">Order placed by ${order.customer_name} on ${orderDate}</h4>
-                            <p class="text-sm text-gray-600 mb-2">Email: ${order.customer_email}</p>
-                            ${order.customer_notes ? `<p class="text-sm text-gray-600 mb-2">Notes: ${order.customer_notes}</p>` : ''}
-                            <div class="ml-4">
-                                ${orderItemsHtml}
+                        <div class="order-history-item" data-order-id="${order.id}">
+                            <div class="order-history-header">
+                                <h4 class="font-bold text-gray-800">${orderDate}</h4>
+                                <button class="text-blue-600 hover:underline text-sm toggle-details-btn" data-order-id="${order.id}">
+                                    View Details
+                                </button>
+                            </div>
+                            <div id="order-details-${order.id}" class="order-history-details hidden">
+                                <p class="text-sm text-gray-600 mb-2">Ordered by: ${order.customer_name} (${order.customer_email})</p>
+                                ${order.customer_notes ? `<p class="text-sm text-gray-600 mb-2">Notes: ${order.customer_notes}</p>` : ''}
+                                <div class="ml-4">
+                                    ${order.order_details.map(item => {
+                                        const quantityDisplay = (item.sku === ENVELOPE_SKU) ? `${item.quantity} (in 1,000s)` : item.quantity;
+                                        return `
+                                            <div class="flex items-center mb-2">
+                                                <img src="${item.imageUrl}" alt="${item.title}" class="w-10 h-10 object-contain rounded-md mr-2" onerror="this.onerror=null;this.src='https://placehold.co/40x40/CCCCCC/000000?text=No+Image';">
+                                                <p class="text-sm text-gray-700">${item.title} (SKU: ${item.sku}) - Qty: ${quantityDisplay}</p>
+                                            </div>
+                                        `;
+                                    }).join('')}
+                                </div>
+                                <button class="reorder-btn" data-order-id="${order.id}">Re-order This</button>
                             </div>
                         </div>
                     `;
                     orderHistoryListDiv.insertAdjacentHTML('beforeend', orderHtml);
                 });
+                attachOrderHistoryEventListeners(orders); // Attach event listeners for history items
+            }
+        }
+
+        /**
+         * Toggles the visibility of order details in history.
+         * @param {string} orderId The ID of the order to toggle.
+         */
+        function toggleOrderDetails(orderId) {
+            const detailsDiv = document.getElementById(`order-details-${orderId}`);
+            if (detailsDiv) {
+                detailsDiv.classList.toggle('hidden');
+                const toggleButton = document.querySelector(`.toggle-details-btn[data-order-id="${orderId}"]`);
+                if (toggleButton) {
+                    toggleButton.textContent = detailsDiv.classList.contains('hidden') ? 'View Details' : 'Hide Details';
+                }
+            }
+        }
+
+        /**
+         * Handles re-ordering a past order.
+         * @param {string} orderId The ID of the order to re-order.
+         */
+        function handleReorder(orderId) {
+            const orderToReorder = window.orderHistoryList.find(order => order.id === orderId); // Access from global window.orderHistoryList
+            if (orderToReorder) {
+                currentOrder = JSON.parse(JSON.stringify(orderToReorder.order_details)); // Deep copy to avoid reference issues
+                renderOrderList();
+                showMessageBox('Order items from history have been added to your current order!');
+            } else {
+                showMessageBox('Could not find this order in history to re-order.');
             }
         }
 
@@ -556,6 +610,11 @@
 
             // Authentication event listeners
             authSubmitButton.addEventListener('click', handleAuthSubmit);
+            authNameInput.addEventListener('keypress', (e) => { // New: Name input keypress
+                if (e.key === 'Enter') {
+                    authEmailInput.focus();
+                }
+            });
             authEmailInput.addEventListener('keypress', (e) => {
                 if (e.key === 'Enter') {
                     authPasswordInput.focus();
@@ -583,6 +642,29 @@
             });
         }
 
+        /**
+         * Attaches event listeners specifically for the dynamically rendered order history items.
+         * @param {Array<object>} orders The current list of order history objects.
+         */
+        function attachOrderHistoryEventListeners(orders) {
+            // Store orders globally for re-order functionality
+            window.orderHistoryList = orders; 
+
+            document.querySelectorAll('.toggle-details-btn').forEach(button => {
+                button.addEventListener('click', (e) => {
+                    const orderId = e.target.dataset.orderId;
+                    toggleOrderDetails(orderId);
+                });
+            });
+
+            document.querySelectorAll('.reorder-btn').forEach(button => {
+                button.addEventListener('click', (e) => {
+                    const orderId = e.target.dataset.orderId;
+                    handleReorder(orderId);
+                });
+            });
+        }
+
         // --- AUTHENTICATION LOGIC ---
 
         /**
@@ -591,11 +673,14 @@
         function toggleAuthForm() {
             isLoginMode = !isLoginMode;
             authError.classList.add('hidden'); // Clear previous errors
+            authNameInput.value = ''; // Clear name input
             authEmailInput.value = '';
             authPasswordInput.value = '';
 
             if (isLoginMode) {
                 authTitle.textContent = 'Login to Access Portal';
+                authNameInput.classList.add('hidden'); // Hide name input for login
+                authNameInput.style.display = 'none'; // Explicitly hide
                 authSubmitButton.textContent = 'Login';
                 toggleAuthModeText.textContent = "Don't have an account?";
                 toggleAuthMode.textContent = 'Sign Up';
@@ -603,6 +688,8 @@
                 authPasswordInput.autocomplete = 'current-password';
             } else {
                 authTitle.textContent = 'Sign Up for Portal Access';
+                authNameInput.classList.remove('hidden'); // Show name input for signup
+                authNameInput.style.display = 'block'; // Explicitly show
                 authSubmitButton.textContent = 'Sign Up';
                 toggleAuthModeText.textContent = "Already have an account?";
                 toggleAuthMode.textContent = 'Login';
@@ -615,11 +702,17 @@
          * Handles login or signup based on the current mode.
          */
         async function handleAuthSubmit() {
+            const name = authNameInput.value.trim(); // Get name for signup
             const email = authEmailInput.value.trim();
             const password = authPasswordInput.value.trim();
 
             if (!email || !password) {
                 authError.textContent = 'Please enter both email and password.';
+                authError.classList.remove('hidden');
+                return;
+            }
+            if (!isLoginMode && !name) { // Name is required only for signup
+                authError.textContent = 'Please enter your name.';
                 authError.classList.remove('hidden');
                 return;
             }
@@ -631,7 +724,14 @@
                 if (isLoginMode) {
                     await signInWithEmailAndPassword(auth, email, password);
                 } else {
-                    await createUserWithEmailAndPassword(auth, email, password);
+                    const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+                    const user = userCredential.user;
+                    // Save user profile to Firestore
+                    await setDoc(doc(db, `artifacts/${appId}/users_profile`, user.uid), {
+                        name: name,
+                        email: email,
+                        createdAt: serverTimestamp()
+                    });
                 }
                 // Rely on onAuthStateChanged to handle UI transition and message boxes
             } catch (error) {
@@ -882,7 +982,18 @@
                 if (user) {
                     currentUserId = user.uid; // Assign to global variable
                     currentUserEmail = user.email; // Assign to global variable
-                    currentUserIdSpan.textContent = currentUserEmail || 'Anonymous User'; // Display email or 'Anonymous User'
+                    
+                    // Fetch user's name from Firestore
+                    const userProfileDocRef = doc(db, `artifacts/${appId}/users_profile`, currentUserId);
+                    const userProfileSnap = await getDoc(userProfileDocRef);
+                    if (userProfileSnap.exists()) {
+                        currentUserName = userProfileSnap.data().name;
+                    } else {
+                        currentUserName = currentUserEmail; // Fallback to email if name not found
+                        console.warn('User profile not found for UID:', currentUserId, 'Falling back to email for display.');
+                    }
+
+                    currentUserNameSpan.textContent = currentUserName || 'Anonymous User'; // Display name or 'Anonymous User'
                     userIdDisplay.classList.remove('hidden');
                     
                     // Explicitly manage display property for main content and overlay
@@ -894,16 +1005,17 @@
 
                     // Prefill Email field from auth, make it readonly
                     customerEmailInput.value = currentUserEmail || ''; 
-                    // Clear name input for user to fill
-                    customerNameInput.value = '';
+                    // Autofill Name field
+                    customerNameInput.value = currentUserName || '';
 
-                    console.log('Firebase authenticated. User ID:', currentUserId, 'Email:', currentUserEmail);
+                    console.log('Firebase authenticated. User ID:', currentUserId, 'Email:', currentUserEmail, 'Name:', currentUserName);
                     listenForOrderHistory(); // Start listening for history
                     fetchProductCatalog(); // Fetch catalog after auth
                 } else {
                     console.log('No Firebase user signed in. Showing authentication prompt.');
                     currentUserId = null; // Assign to global variable
                     currentUserEmail = null; // Assign to global variable
+                    currentUserName = null; // Clear name on logout
                     userIdDisplay.classList.add('hidden');
                     
                     // Explicitly manage display property for main content and overlay
@@ -913,6 +1025,15 @@
                     authOverlay.style.display = 'flex'; // Explicitly show the overlay
                     authOverlay.classList.remove('hidden'); // Ensure hidden class is removed
                     
+                    // Crucially, ensure name input is hidden when showing login form
+                    authNameInput.classList.add('hidden'); 
+                    authNameInput.style.display = 'none'; // Explicitly hide here too
+                    isLoginMode = true; // Reset to login mode
+                    authTitle.textContent = 'Login to Access Portal';
+                    authSubmitButton.textContent = 'Login';
+                    toggleAuthModeText.textContent = "Don't have an account?";
+                    toggleAuthMode.textContent = 'Sign Up';
+
                     // Clear prefilled fields if logged out
                     customerNameInput.value = '';
                     customerEmailInput.value = '';
