@@ -18,7 +18,7 @@
         .container {
             /* Changed to Flexbox for layout: flex-col for mobile, flex-row for md and up */
             /* Added justify-between to distribute space between columns */
-            @apply bg-white shadow-lg rounded-xl p-6 w-full max-w-7xl mx-auto flex flex-col md:flex-row gap-6 justify-between;
+            @apply bg-white shadow-lg rounded-xl p-4 sm:p-6 w-full max-w-7xl mx-auto flex flex-col md:flex-row gap-6 justify-between;
         }
         /* Applied space-y-6 directly to column divs */
         .column-content {
@@ -196,7 +196,7 @@
     <!-- Main content container - initially hidden -->
     <div class="container hidden">
         <!-- Left Column (Main Content) -->
-        <div class="w-full md:w-2/3 flex-shrink-0 column-content">
+        <div class="w-full md:flex-grow flex-shrink-0 column-content">
             <h1 class="text-3xl font-bold text-gray-800 text-center mb-6">CG Weekly Order Portal</h1>
 
             <!-- User ID Display -->
@@ -279,7 +279,7 @@
         </div>
 
         <!-- Right Column (Order History) -->
-        <div class="w-full md:w-1/3 md:max-w-xs flex-shrink-0 column-content">
+        <div class="w-full md:max-w-sm flex-shrink-0 column-content">
             <!-- Order History Section -->
             <div class="bg-yellow-50 p-4 rounded-lg">
                 <!-- New clickable header for mobile -->
