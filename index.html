@@ -614,10 +614,16 @@
 
                 const values = line.split(csvSplitRegex).map(value => value.trim().replace(/^"|"$/g, '')); // Remove quotes from values
 
-                if (values.length !== headers.length) {
+                // MODIFIED: If more values than headers, truncate values array to match headers length
+                if (values.length > headers.length) {
+                    console.warn(`Skipping row ${i + 1} due to column mismatch. Expected ${headers.length} columns, got ${values.length}. Truncating. Row: "${line}"`);
+                    values.length = headers.length; // Truncate the array to match the number of headers
+                } else if (values.length < headers.length) {
+                    // If fewer values than headers, this is still an issue, so skip the row
                     console.warn(`Skipping row ${i + 1} due to column mismatch. Expected ${headers.length} columns, got ${values.length}. Row: "${line}"`);
                     continue;
                 }
+
                 const rowObject = {};
                 headers.forEach((header, index) => {
                     // Special handling for searchTerms: convert to array
