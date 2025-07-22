@@ -452,7 +452,7 @@
     <div id="proofModal" class="hidden">
         <div id="proofModalContent" class="bg-white p-6 rounded-xl shadow-lg max-w-lg w-full text-center space-y-4 relative">
             <button id="closeProofModal" class="absolute top-2 right-2 text-gray-500 hover:text-gray-800 text-2xl">&times;</button>
-            <h3 class="text-2xl font-bold mb-4">Order Proof for Review</h3>
+            <h3 class="2xl font-bold mb-4">Order Proof for Review</h3>
             <div id="proofContent" class="text-left max-h-96 overflow-y-auto p-2 border rounded-md bg-white">
                 <!-- Proof details will be inserted here -->
             </div>
@@ -647,6 +647,8 @@
                     throw new Error(`Failed to fetch product catalog: ${response.statusText}`);
                 }
                 const csvText = await response.text();
+                // NEW LOG: Log the raw CSV text received by the fetch call
+                console.log('Raw CSV Text received by fetch:', csvText.substring(0, 200) + '...'); // Log first 200 chars to avoid huge console output
                 productCatalog = parseCSV(csvText);
 
                 // Add the hardcoded envelope item to the product catalog
@@ -1083,7 +1085,7 @@
                         errorMessage = 'Invalid email address format.';
                         break;
                     case 'auth/user-disabled':
-                        errorMessage = 'Your account has been disabled.';
+                        errorMessage = 'Your account has-been disabled.';
                         break;
                     case 'auth/user-not-found':
                     case 'auth/wrong-password':
