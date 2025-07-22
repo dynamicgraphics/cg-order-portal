@@ -190,7 +190,7 @@
             /* Updated styling for a more prominent, rounded vertical tab look on the right */
             background-image: linear-gradient(to bottom, #4f46e5, #2563eb); /* Vertical gradient */
             /* Changed rounded-r-md to rounded-r-full for full rounding on the right edge */
-            @apply text-white py-8 px-4 rounded-l-full rounded-r-full shadow-xl font-extrabold text-lg hover:opacity-90 transition duration-200 flex flex-col items-center justify-center gap-2 border-y-4 border-l-4 border-blue-300;
+            @apply text-white py-8 px-4 rounded-l-full rounded-r-none shadow-xl font-extrabold text-lg hover:opacity-90 transition duration-200 flex flex-col items-center justify-center gap-2 border-y-4 border-l-4 border-blue-300;
             width: auto; /* Allow width to adjust to content */
             min-height: 150px; /* Ensure a minimum height for the vertical tab */
             /* Stronger shadow on the left */
@@ -364,9 +364,6 @@
 
     <!-- Floating Order History Button (Mobile Only) -->
     <button id="floatingOrderHistoryBtn" class="lg:hidden">
-        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-            <path stroke-linecap="round" stroke-linejoin="round" d="M4 6h16M4 10h16M4 14h16M4 18h16" />
-        </svg>
         Order History
     </button>
 
