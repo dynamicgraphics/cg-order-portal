@@ -104,27 +104,30 @@
             font-weight: 700;    /* font-bold */
             color: #333333;
         }
-        /* Style for order history items */
-        .order-history-item {
-            @apply bg-white border-b border-gray-200 last:border-b-0; 
+        /* Style for order history item card */
+        .order-history-card {
+            background-color: white;
+            border-radius: 0.5rem; /* rounded-lg */
+            box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05); /* shadow-sm */
+            margin-bottom: 1rem; /* mb-4 for spacing between cards */
+            overflow: hidden; /* Ensures child border-radius applies correctly */
+            border: 1px solid #e2e8f0; /* subtle border */
         }
+
+        /* Style for the clickable header button */
         .order-history-header {
-            /* Explicitly define button properties */
-            display: flex; /* Use flex for alignment */
+            display: flex;
             justify-content: space-between;
             align-items: center;
-            width: 100%;
+            width: 100%; /* Take full width of its parent card */
             text-align: left;
-            padding: 12px 16px; /* py-3 px-4 */
+            padding: 0.75rem 1rem; /* py-3 px-4 */
             background-color: #2563eb; /* bg-blue-600 */
             color: white; /* text-white */
-            border-radius: 8px; /* rounded-lg */
             font-weight: 600; /* font-semibold */
             cursor: pointer;
-            border: none; /* Ensure no default button border */
-            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06); /* shadow-md */
-            transition: background-color 0.2s ease-in-out; /* transition duration-200 */
-            margin-bottom: 4px; /* Add a small gap between history items */
+            border: none; /* Remove default button border */
+            transition: background-color 0.2s ease-in-out;
         }
         .order-history-header:hover {
             background-color: #1d4ed8; /* hover:bg-blue-700 */
@@ -136,9 +139,14 @@
         .order-history-header .toggle-details-btn {
             color: white; /* Ensure text color is white for the span */
             text-decoration: underline; /* Keep underline for visual cue */
+            font-size: 0.875rem; /* text-sm */
         }
+
+        /* Style for the expandable details section */
         .order-history-details {
-            @apply mt-2 pl-4 border-l-2 border-gray-200 py-2; 
+            padding: 1rem; /* Uniform padding */
+            border-top: 1px solid #e2e8f0; /* Separator from the button */
+            background-color: #f8fafc; /* bg-gray-50 */
         }
         .reorder-btn {
             /* Enhanced styling for re-order button */
@@ -263,7 +271,7 @@
         <!-- Order History Section -->
         <div class="mb-6 bg-yellow-50 p-4 rounded-lg">
             <h2 class="text-2xl font-bold text-gray-800 mb-4">Your Order History</h2>
-            <div id="orderHistoryList" class="order-list-scroll border border-gray-200 rounded-lg divide-y divide-gray-200">
+            <div id="orderHistoryList" class="order-list-scroll border border-gray-200 rounded-lg">
                 <div class="p-4 text-gray-500 text-center" id="emptyOrderHistoryMessage">No past orders found.</div>
                 <!-- Order history items will be dynamically inserted here -->
             </div>
@@ -566,7 +574,7 @@
                 orders.forEach(order => {
                     const orderDate = order.timestamp ? new Date(order.timestamp.toDate()).toLocaleString() : 'N/A';
                     const orderHtml = `
-                        <div class="order-history-item" data-order-id="${order.id}">
+                        <div class="order-history-card" data-order-id="${order.id}">
                             <button class="order-history-header" data-order-id="${order.id}">
                                 <h4 class="font-bold">${orderDate}</h4>
                                 <span class="toggle-details-btn" data-order-id="${order.id}">
