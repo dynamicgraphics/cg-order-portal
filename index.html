@@ -493,7 +493,7 @@
         const SHOPIFY_STOREFRONT_ACCESS_TOKEN = 'DUMMY_TOKEN_NOT_USED'; 
         const GOOGLE_CLOUD_FUNCTION_URL = 'https://send-order-email-543604960285.us-central1.run.app'; 
         // This URL should be obtained by "Publish to web" as CSV from your Google Sheet.
-        const GOOGLE_SHEET_CSV_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vRJeafxZBqtfXhW91V849PmPbr1C0ExZmnvfQ_410tdo4PPDvXNPHC44VrBEd3G7nRpPulT-XC6R79X/pub?gid=1341072506&single=true&output=csv';
+        const GOOGLE_SHEET_CSV_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vRJeafxZBqtfXhW91V849PmPbr1C0ExMmnvfQ_410tdo4PPDvXNPHC44VrBEd3G7nRpPulT-XC6R79X/pub?gid=1341072506&single=true&output=csv';
         const ENVELOPE_SKU = 'CG-SE1';
         const ADMIN_PROOF_EMAIL = 'admin@example.com'; // IMPORTANT: Replace with your actual admin email for receiving proofs
 
@@ -592,14 +592,15 @@
             const rawHeaders = lines[0].split(csvSplitRegex);
             console.log('Headers after initial split (raw values):', rawHeaders);
 
-            const headers = rawHeaders.map(header => header.trim().replace(/^"|"$/g, ''));
-            console.log('Final Parsed Headers (after trim and quote removal):', headers);
+            // Filter out any empty strings from the headers array
+            const headers = rawHeaders.map(header => header.trim().replace(/^"|"$/g, '')).filter(header => header !== '');
+            console.log('Final Parsed Headers (after trim, quote removal, and empty filter):', headers);
 
-            // Check for empty headers
-            if (headers.some(header => header === '')) {
-                console.error('ERROR: One or more headers are empty after parsing. Please check your CSV header row for empty cells or unexpected characters.');
-                showMessageBox('Error: Product catalog headers are malformed. Please check your Google Sheet CSV headers.');
-                return []; // Return empty array if headers are bad
+            // Check for empty headers (this check is now more robust due to filtering above)
+            if (headers.length === 0) {
+                console.error('ERROR: No valid headers found after parsing. Please check your CSV header row.');
+                showMessageBox('Error: Product catalog headers are malformed or missing. Please check your Google Sheet CSV headers.');
+                return []; // Return empty array if no valid headers
             }
 
             const data = [];
