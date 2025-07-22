@@ -183,12 +183,14 @@
         /* Styles for the new floating Order History button */
         #floatingOrderHistoryBtn {
             position: fixed;
-            bottom: 20px;
+            bottom: 0; /* Position at the very bottom */
             left: 50%;
             transform: translateX(-50%);
             z-index: 50; /* Above main content, below message box */
             /* Updated styling for a more prominent tab look */
-            @apply bg-indigo-600 text-white py-4 px-8 rounded-full shadow-xl font-extrabold text-xl uppercase hover:bg-indigo-700 transition duration-200 flex items-center gap-2;
+            @apply bg-indigo-600 text-white py-5 px-12 rounded-t-3xl rounded-b-none shadow-2xl font-extrabold text-xl uppercase hover:bg-indigo-700 transition duration-200 flex items-center gap-2;
+            width: auto; /* Allow width to adjust to content */
+            min-width: 200px; /* Ensure a minimum width for the tab */
         }
 
         /* Styles for the new full-screen order history modal */
