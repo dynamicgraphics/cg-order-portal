@@ -13,12 +13,12 @@
         /* Custom styles for Inter font and general layout */
         body {
             font-family: 'Inter', sans-serif;
-            @apply bg-gray-100 flex items-center justify-center min-h-screen p-4; /* Re-added p-4 for overall padding */
+            /* Added overflow-x-hidden to prevent horizontal scrolling */
+            @apply bg-gray-100 flex items-center justify-center min-h-screen p-4 overflow-x-hidden; 
         }
         .container {
-            /* Changed to Flexbox for layout: flex-col for mobile, flex-row for md and up */
-            /* Added justify-between to distribute space between columns */
-            @apply bg-white shadow-lg rounded-xl p-4 sm:p-6 w-full max-w-7xl mx-auto flex flex-col md:flex-row gap-6 justify-between;
+            /* Removed max-w-7xl to allow full width on small screens */
+            @apply bg-white shadow-lg rounded-xl p-4 sm:p-6 w-full mx-auto flex flex-col md:flex-row gap-6 justify-between;
         }
         /* Applied space-y-6 directly to column divs */
         .column-content {
@@ -227,7 +227,7 @@
                 <div id="loadingIndicator" class="hidden text-center mt-4 text-blue-600 font-medium">
                     Searching...
                 </div>
-                <div id="searchResults" class="mt-4 grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div id="searchResults" class="mt-4 grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <!-- Search results will be dynamically inserted here -->
                 </div>
                 <div id="noResults" class="hidden text-center text-gray-500 mt-4">No products found. Please try a different search term.</div>
