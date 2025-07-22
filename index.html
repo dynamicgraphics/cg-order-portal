@@ -16,9 +16,8 @@
             @apply bg-gray-100 flex items-center justify-center min-h-screen p-4;
         }
         .container {
-            /* Modified for grid layout */
-            /* Increased max-width to allow more horizontal space for columns */
-            @apply bg-white shadow-lg rounded-xl p-6 md:p-8 w-full max-w-7xl space-y-6 md:grid md:grid-cols-3 md:gap-6 md:space-y-0;
+            /* Modified for grid layout: removed space-y-6 from here */
+            @apply bg-white shadow-lg rounded-xl p-6 md:p-8 w-full max-w-7xl mx-auto md:grid md:grid-cols-3 md:gap-6;
         }
         input[type="number"]::-webkit-inner-spian-button,
         input[type="number"]::-webkit-outer-spin-button {
@@ -209,7 +208,7 @@
             </div>
 
             <!-- Search Section -->
-            <div class="mb-6 bg-blue-50 p-4 rounded-lg">
+            <div class="bg-blue-50 p-4 rounded-lg">
                 <label for="partSearch" class="block text-gray-700 text-lg font-semibold mb-2">Search Part by Number/Name:</label>
                 <div class="flex flex-col sm:flex-row gap-4">
                     <input type="text" id="partSearch" placeholder="(e.g., CG-001, BuzzOff2)"
@@ -229,7 +228,7 @@
             </div>
 
             <!-- Order List Section -->
-            <div class="mb-6 bg-green-50 p-4 rounded-lg">
+            <div class="bg-green-50 p-4 rounded-lg">
                 <h2 class="text-2xl font-bold text-gray-800 mb-4">Your Current Order</h2>
                 <div id="orderList" class="order-list-scroll border border-gray-200 rounded-lg divide-y divide-gray-200">
                     <div class="p-4 text-gray-500 text-center" id="emptyOrderMessage">No items in your order yet.</div>
