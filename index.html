@@ -492,9 +492,7 @@
         const SHOPIFY_STORE_DOMAIN = 'dynamic.graphics'; 
         const SHOPIFY_STOREFRONT_ACCESS_TOKEN = 'DUMMY_TOKEN_NOT_USED'; 
         const GOOGLE_CLOUD_FUNCTION_URL = 'https://send-order-email-543604960285.us-central1.run.app'; 
-        // IMPORTANT: This URL needs to be obtained by "Publish to web" as CSV from your Google Sheet.
-        // The current URL you provided (ending in /pubhtml) is for embedding HTML, not for fetching CSV data.
-        // It will likely cause parsing errors or CORS issues.
+        // This URL should be obtained by "Publish to web" as CSV from your Google Sheet.
         const GOOGLE_SHEET_CSV_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vRJeafxZBqtfXhW91V849PmPbr1C0ExZmnvfQ_410tdo4PPDvXNPHC44VrBEd3G7nRpPulT-XC6R79X/pub?output=csv';
         const ENVELOPE_SKU = 'CG-SE1';
         const ADMIN_PROOF_EMAIL = 'admin@example.com'; // IMPORTANT: Replace with your actual admin email for receiving proofs
@@ -502,9 +500,6 @@
         // --- GLOBAL VARIABLES & CACHED ELEMENTS ---
         let currentOrder = []; // Stores items added to the order
         let productCatalog = []; // Will store the product data fetched from the Google Sheet
-
-        // The productCatalog will now be fetched from GOOGLE_SHEET_CSV_URL by fetchProductCatalog().
-        // Removed hardcoded product catalog and fallback as the provided URL is now correct for CSV.
         
         const searchInput = document.getElementById('partSearch');
         const searchButton = document.getElementById('searchButton');
@@ -527,7 +522,7 @@
         const authNameInput = document.getElementById('authName'); // New: Name input
         const authEmailInput = document.getElementById('authEmail');
         const authPasswordInput = document.getElementById('authPassword');
-        const authSubmitButton = document.getElementById('authSubmit');
+        const authSubmitButton = document.getElementById('authSubmit'); // Corrected this line
         const authError = document.getElementById('authError');
         const toggleAuthMode = document.getElementById('toggleAuthMode');
         const toggleAuthModeText = document.getElementById('toggleAuthModeText');
@@ -581,18 +576,40 @@
          * @returns {Array<object>} An array of objects, where each object represents a row.
          */
         function parseCSV(csvText) {
+            console.log('Parsing CSV Text (raw):', csvText); // Log the raw CSV text
             const lines = csvText.trim().split(/\r?\n/); // Split by new line, handling both \n and \r\n
-            if (lines.length === 0) return [];
+            if (lines.length === 0) {
+                console.warn('No lines found in CSV text.');
+                return [];
+            }
+
+            console.log('Raw CSV Header Line:', lines[0]); // Log the exact first line
 
             // Regex to split by comma, ignoring commas within double quotes
             const csvSplitRegex = /,(?=(?:(?:[^"]*"){2})*[^"]*$)/;
 
-            const headers = lines[0].split(csvSplitRegex).map(header => header.trim().replace(/^"|"$/g, '')); // Remove quotes from headers
+            // Extract headers and trim/remove quotes
+            const rawHeaders = lines[0].split(csvSplitRegex);
+            console.log('Headers after initial split (raw values):', rawHeaders);
+
+            const headers = rawHeaders.map(header => header.trim().replace(/^"|"$/g, ''));
+            console.log('Final Parsed Headers (after trim and quote removal):', headers);
+
+            // Check for empty headers
+            if (headers.some(header => header === '')) {
+                console.error('ERROR: One or more headers are empty after parsing. Please check your CSV header row for empty cells or unexpected characters.');
+                showMessageBox('Error: Product catalog headers are malformed. Please check your Google Sheet CSV headers.');
+                return []; // Return empty array if headers are bad
+            }
+
             const data = [];
 
             for (let i = 1; i < lines.length; i++) {
                 const line = lines[i].trim();
-                if (line === '') continue; // Skip empty lines
+                if (line === '') {
+                    console.log(`Skipping empty line ${i + 1}.`);
+                    continue; // Skip empty lines
+                }
 
                 const values = line.split(csvSplitRegex).map(value => value.trim().replace(/^"|"$/g, '')); // Remove quotes from values
 
@@ -612,6 +629,7 @@
                 });
                 data.push(rowObject);
             }
+            console.log('Parsed Data (productCatalog before envelope):', data);
             return data;
         }
 
@@ -644,14 +662,13 @@
                     productCatalog.push(envelopeItem);
                 }
                 
-                console.log('Product catalog loaded:', productCatalog); // Log the loaded catalog
+                console.log('Final Product Catalog (after adding envelope):', productCatalog); // Log the loaded catalog
                 loadingIndicator.classList.add('hidden');
             }
             catch (error) {
                 console.error('Error fetching or parsing product catalog:', error);
                 loadingIndicator.classList.add('hidden');
                 showMessageBox('Error loading product catalog. Please try refreshing the page or contact support.');
-                // Removed fallback to hardcoded catalog.
             }
         }
 
@@ -677,8 +694,9 @@
          * @returns {string} HTML string for the product card.
          */
         function renderProductCard(product) {
-            // Using product.id as the unique identifier for the HTML elements
-            const uniqueId = product.id.replace(/[^a-zA-Z0-9-_]/g, ''); // Sanitize for HTML ID
+            // Ensure product.id exists before sanitizing
+            const productId = product.id || `unknown-id-${Math.random().toString(36).substring(7)}`;
+            const uniqueId = productId.replace(/[^a-zA-Z0-9-_]/g, ''); // Sanitize for HTML ID
 
             // Determine initial quantity value based on SKU
             const initialQuantity = (product.sku === ENVELOPE_SKU) ? 1 : 100; // 1 for envelope (represents 1000), 100 for others
@@ -696,12 +714,12 @@
                         <input type="number" value="${initialQuantity}" min="${minQuantity}"
                                class="w-full sm:w-20 p-2 border border-gray-300 rounded-lg text-center quantity-input" <!-- w-full on mobile, sm:w-20 on sm -->
                                id="qty-${uniqueId}"
-                               data-product-id="${product.id}"
+                               data-product-id="${productId}"
                                data-product-title="${product.title}"
                                data-product-sku="${product.sku}"
                                data-product-image="${product.imageUrl}">
                         <button class="w-full sm:w-auto px-3 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition duration-200 add-to-order-btn" <!-- w-full on mobile, sm:w-auto on sm -->
-                                data-product-id="${product.id}">
+                                data-product-id="${productId}">
                             Add${quantityUnit}
                         </button>
                     </div>
@@ -1125,10 +1143,12 @@
 
             // Filter the productCatalog fetched from Google Sheet
             const filteredProducts = productCatalog.filter(product => 
-                (product.searchTerms && product.searchTerms.some(term => term.includes(searchTerm))) || // searchTerms is already lowercased
-                (product.title && product.title.toLowerCase().includes(searchTerm)) ||
-                (product.sku && product.sku.toLowerCase().includes(searchTerm))
+                (product.searchTerms && Array.isArray(product.searchTerms) && product.searchTerms.some(term => term.includes(searchTerm))) || // Check if searchTerms is an array
+                (product.title && typeof product.title === 'string' && product.title.toLowerCase().includes(searchTerm)) || // Check if title is string
+                (product.sku && typeof product.sku === 'string' && product.sku.toLowerCase().includes(searchTerm)) // Check if sku is string
             );
+
+            console.log('Filtered Products (after search):', filteredProducts); // Log filtered products
 
             loadingIndicator.classList.add('hidden');
 
