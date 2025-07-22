@@ -19,7 +19,8 @@
         body {
             font-family: 'Inter', sans-serif;
             /* Added overflow-x-hidden to prevent horizontal scrolling */
-            @apply bg-gray-100 flex items-center justify-center min-h-screen p-4 overflow-x-hidden; 
+            /* Added padding-bottom to ensure space for the fixed floating button */
+            @apply bg-gray-100 flex items-center justify-center min-h-screen p-4 overflow-x-hidden pb-[100px]; 
         }
         .container {
             /* Removed max-w-7xl to allow full width on small screens */
@@ -186,11 +187,11 @@
             bottom: 0; /* Position at the very bottom */
             left: 50%;
             transform: translateX(-50%);
-            z-index: 50; /* Above main content, below message box */
+            z-index: 999; /* Very high z-index */
             /* Updated styling for a more prominent tab look */
-            @apply bg-indigo-600 text-white py-6 px-16 rounded-t-3xl rounded-b-none shadow-2xl font-extrabold text-xl uppercase hover:bg-indigo-700 transition duration-200 flex items-center justify-center gap-2 border-t-4 border-blue-300;
+            @apply bg-indigo-600 text-white py-6 px-16 rounded-t-3xl rounded-b-none shadow-2xl font-extrabold text-xl uppercase hover:bg-indigo-700 transition duration-200 flex items-center justify-center gap-2 border-x-4 border-t-4 border-blue-300;
             width: auto; /* Allow width to adjust to content */
-            min-width: 250px; /* Ensure a minimum width for the tab */
+            min-width: 280px; /* Ensure a minimum width for the tab */
         }
 
         /* Styles for the new full-screen order history modal */
