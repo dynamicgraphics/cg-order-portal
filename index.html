@@ -501,8 +501,17 @@
         let currentOrder = []; // Stores items added to the order
         let productCatalog = []; // Will store the product data fetched from the Google Sheet
 
-        // Removed the temporary hardcoded productCatalog.
-        // The productCatalog will now be fetched from GOOGLE_SHEET_CSV_URL by fetchProductCatalog().
+        // TEMPORARY: Hardcoded product catalog for demonstration due to CORS issue with Google Sheet URL.
+        // REPLACE THIS WITH YOUR ACTUAL GOOGLE SHEET FETCH LOGIC WHEN YOU HAVE A VALID, PUBLIC CSV URL.
+        // Ensure your Google Sheet has 'id', 'title', 'sku', 'imageUrl', and 'searchTerms' columns.
+        productCatalog = [
+            { id: 'CG-001', title: 'Standard Sticker Pack', sku: 'CG-001', imageUrl: 'https://placehold.co/60x60/FF5733/FFFFFF?text=CG-001', searchTerms: ['standard', 'sticker', 'pack', 'cg-001'] },
+            { id: 'CG-002', title: 'Premium Decal Set', sku: 'CG-002', imageUrl: 'https://placehold.co/60x60/33FF57/FFFFFF?text=CG-002', searchTerms: ['premium', 'decal', 'set', 'cg-002'] },
+            { id: 'CG-003', title: 'Glow in the Dark Stickers', sku: 'CG-003', imageUrl: 'https://placehold.co/60x60/3357FF/FFFFFF?text=CG-003', searchTerms: ['glow', 'dark', 'gitd', 'cg-003'] },
+            { id: 'CG-004', title: 'Vinyl Banners (Large)', sku: 'CG-004', imageUrl: 'https://placehold.co/60x60/FF33CC/FFFFFF?text=CG-004', searchTerms: ['vinyl', 'banner', 'large', 'cg-004'] },
+            { id: 'CG-005', title: 'Custom Die-Cut Stickers', sku: 'CG-005', imageUrl: 'https://placehold.co/60x60/FFFF33/000000?text=CG-005', searchTerms: ['custom', 'die-cut', 'stickers', 'cg-005'] },
+            { id: 'CG-SE1', title: 'Custom Sticker Envelopes', sku: 'CG-SE1', imageUrl: 'https://storage.googleapis.com/cg-portal-assets/CG-SE1%20White%20Bubble%20Sticker%20Envelope.png', searchTerms: ['envelope', 'envelopes', 'cg-se1'] }
+        ];
 
 
         const searchInput = document.getElementById('partSearch');
@@ -617,6 +626,10 @@
 
         /**
          * Fetches product data from the Google Sheet CSV URL and adds hardcoded envelope.
+         * NOTE: This function is currently NOT being called directly in DOMContentLoaded.
+         * The productCatalog is hardcoded for demonstration due to CORS issues with Google Sheets.
+         * Uncomment the call to this function in DOMContentLoaded and provide a valid GOOGLE_SHEET_CSV_URL
+         * (obtained via "Publish to web" as CSV) if you want to fetch data from your Google Sheet.
          */
         async function fetchProductCatalog() {
             try {
@@ -1450,7 +1463,7 @@
             renderOrderList(); // Initial render of an empty order list
 
             // Initialize Firebase instances using the provided config
-            app = initializeApp(firebaseConfig); /* FIXED: Changed 'firebase' to 'firebaseConfig' */
+            app = initializeApp(firebaseConfig); 
             auth = getAuth(app);
             db = getFirestore(app);
             // Removed import for getAnalytics to prevent the referrer error initially
@@ -1488,7 +1501,7 @@
 
                     console.log('Firebase authenticated. User ID:', currentUserId, 'Email:', currentUserEmail, 'Name:', currentUserName);
                     listenForOrderHistory(); // Start listening for history
-                    fetchProductCatalog(); // Fetch catalog after auth
+                    // fetchProductCatalog(); // Commented out to use hardcoded catalog due to CORS issue
                 } else {
                     console.log('No Firebase user signed in. Showing authentication prompt.');
                     currentUserId = null; // Assign to global variable
