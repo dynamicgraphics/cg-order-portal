@@ -9,6 +9,8 @@
     
     <!-- Tailwind CSS CDN -->
     <script src="https://cdn.tailwindcss.com"></script>
+    <!-- EmailJS CDN -->
+    <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
     <style>
         /* Ensure box-sizing is border-box for all elements to prevent layout issues */
         *, *::before, *::after {
@@ -514,7 +516,15 @@
 
 
         // --- CONFIGURATION ---
-        const GOOGLE_CLOUD_FUNCTION_URL = 'https://send-order-email-543604960285.us-central1.run.app'; 
+        // Removed Google Cloud Function URL, now using EmailJS
+        // const GOOGLE_CLOUD_FUNCTION_URL = 'https://send-order-email-543604960285.us-central1.run.app'; 
+        
+        // EmailJS Configuration - REPLACE THESE WITH YOUR ACTUAL EMAILJS CREDENTIALS
+        const EMAILJS_SERVICE_ID = 'YOUR_EMAILJS_SERVICE_ID'; // e.g., 'service_abcdefg'
+        const EMAILJS_TEMPLATE_ID_CUSTOMER = 'YOUR_EMAILJS_CUSTOMER_TEMPLATE_ID'; // e.g., 'template_customer_order'
+        const EMAILJS_TEMPLATE_ID_ADMIN = 'YOUR_EMAILJS_ADMIN_TEMPLATE_ID'; // e.g., 'template_admin_proof'
+        const EMAILJS_USER_ID = 'YOUR_EMAILJS_PUBLIC_KEY'; // e.g., 'user_xxxxxxxxxxxxxxxxxxxx'
+
         // This URL should be obtained by "Publish to web" as CSV from your Google Sheet.
         const GOOGLE_SHEET_CSV_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vRJeafxZBqtfXhW91V849PmPbr1C0ExZmnvfQ_410tdo4PPDvXNPHC44VrBEd3G7nRpPulT-XC6R79X/pub?gid=1341072506&single=true&output=csv';
         const ENVELOPE_SKU = 'CG-SE1';
@@ -1258,7 +1268,6 @@
                 proofHtml += `<p class="text-gray-700 mb-3"><strong>Notes:</strong> ${customerNotes}</p>`;
             }
 
-            // Removed: proofHtml += `<h4 class="text-xl font-semibold mb-2">Order Details:</h4>`;
             // The proofContent div now handles its own flex/wrap, so we just append items
             proofHtml += `<div class="flex flex-wrap justify-center gap-4">`; // Start a new flex container for items
             currentOrder.forEach(item => {
@@ -1281,7 +1290,27 @@
         }
 
         /**
-         * Generates the HTML content for the admin proof email.
+         * Generates a concise HTML summary of order items for the customer email.
+         * @param {Array<object>} orderDetails Array of order item objects.
+         * @returns {string} HTML string for the customer order summary.
+         */
+        function generateCustomerOrderSummaryHtml(orderDetails) {
+            let summaryHtml = '<ul style="list-style: none; padding: 0;">';
+            orderDetails.forEach(item => {
+                const quantityDisplay = (item.sku === ENVELOPE_SKU) ? `${item.quantity} (in 1,000s)` : item.quantity;
+                summaryHtml += `
+                    <li style="margin-bottom: 8px; padding-bottom: 8px; border-bottom: 1px solid #eee; display: flex; align-items: center;">
+                        <img src="${item.imageUrl}" alt="${item.title}" style="max-width: 40px; max-height: 40px; object-fit: contain; border-radius: 4px; margin-right: 10px;" onerror="this.onerror=null;this.src='https://placehold.co/40x40/CCCCCC/000000?text=No+Image';">
+                        <span style="font-size: 0.9em; color: #333;">${item.title} (SKU: ${item.sku}) - Qty: ${quantityDisplay}</span>
+                    </li>
+                `;
+            });
+            summaryHtml += '</ul>';
+            return summaryHtml;
+        }
+
+        /**
+         * Generates the HTML content for the admin proof email (table format).
          * This HTML is designed to be sent as the body of an email.
          * @param {object} orderPayload The order data.
          * @param {string} orderId The Firestore document ID for the order.
@@ -1353,7 +1382,7 @@
         }
 
         /**
-         * Handles the order submission. Sends order data to a Google Cloud Function and saves to Firestore.
+         * Handles the order submission. Sends order data using EmailJS and saves to Firestore.
          */
         async function handleSubmitOrder() {
             const customerName = customerNameInput.value.trim();
@@ -1370,18 +1399,21 @@
                 return;
             }
 
-            // Prepare payload for the Google Cloud Function (for customer confirmation email)
+            // Prepare order details for saving to Firestore and sending via EmailJS
+            const orderDetailsForEmail = currentOrder.map(item => ({
+                id: item.id || '',
+                title: item.title || '',
+                sku: item.sku || '',
+                quantity: item.quantity || 0,
+                imageUrl: item.imageUrl || 'https://placehold.co/64x64/CCCCCC/000000?text=No+Image'
+            }));
+
+            // Prepare payload for Firestore
             const orderPayload = {
                 customer_name: customerName,
                 customer_email: customerEmail,
                 customer_notes: customerNotes,
-                order_details: currentOrder.map(item => ({
-                    id: item.id || '',
-                    title: item.title || '',
-                    sku: item.sku || '',
-                    quantity: item.quantity || 0,
-                    imageUrl: item.imageUrl || 'https://placehold.co/64x64/CCCCCC/000000?text=No+Image'
-                }))
+                order_details: orderDetailsForEmail
             };
 
             // Disable buttons to prevent multiple submissions
@@ -1408,50 +1440,46 @@
 
                 const orderId = orderDocRef ? orderDocRef.id : 'N/A'; // Get the generated ID
 
-                // Generate admin proof HTML with the orderId
-                const adminProofHtml = generateAdminProofHtml(orderPayload, orderId); // Pass orderId
+                // Generate HTML content for EmailJS templates
+                const customerOrderSummaryHtml = generateCustomerOrderSummaryHtml(orderDetailsForEmail);
+                const adminProofHtmlTable = generateAdminProofHtml(orderPayload, orderId); // This is the full HTML for admin
 
-                // Prepare payload for the admin proof email (sent automatically)
-                const adminProofPayload = {
+                // 2. Send customer confirmation email via EmailJS
+                const customerTemplateParams = {
                     customer_name: customerName,
                     customer_email: customerEmail,
-                    recipient_email: ADMIN_PROOF_EMAIL, // Send to admin email
-                    subject: `New Order Confirmation for ${customerName} (${customerEmail}) - Order ID: ${orderId}`, // Custom subject for admin
-                    html_body: adminProofHtml, // Send as HTML body
-                    is_proof: true // Optional flag for the cloud function to handle proof formatting
+                    order_summary_html: customerOrderSummaryHtml,
+                    customer_notes: customerNotes,
+                    // Add other parameters if your customer template uses them
                 };
 
-                // Send both emails in parallel (or sequentially if preferred)
-                const [customerResponse, adminProofResponse] = await Promise.all([
-                    fetch(GOOGLE_CLOUD_FUNCTION_URL, {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify(orderPayload), // Customer confirmation
-                    }),
-                    fetch(GOOGLE_CLOUD_FUNCTION_URL, {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify(adminProofPayload), // Admin proof
-                    })
-                ]);
-
-                if (!customerResponse.ok) {
-                    const errorData = await customerResponse.json(); 
-                    const errorMessage = errorData.message || `Server error: ${customerResponse.status} ${customerResponse.statusText}`;
-                    console.error('Customer email sending failed (Cloud Function):', errorMessage);
-                    showMessageBox(`Failed to send order confirmation: ${errorMessage}`);
-                    return; // Stop here if customer email sending fails
+                try {
+                    await emailjs.send(EMAILJS_SERVICE_ID, EMAILJS_TEMPLATE_ID_CUSTOMER, customerTemplateParams, EMAILJS_USER_ID);
+                    console.log('Customer email sent successfully via EmailJS!');
+                } catch (emailError) {
+                    console.error('Failed to send customer email via EmailJS:', emailError);
+                    showMessageBox(`Order submitted, but failed to send confirmation email to you: ${emailError.text || emailError}`);
                 }
 
-                if (!adminProofResponse.ok) {
-                    const errorData = await adminProofResponse.json();
-                    const errorMessage = errorData.message || `Server error: ${adminProofResponse.status} ${adminProofResponse.statusText}`;
-                    console.error('Admin proof email sending failed (Cloud Function):', errorMessage);
-                    // Do not block user submission if admin email fails, but log and inform if critical
-                    showMessageBox(`Order submitted, but failed to send confirmation to admin: ${errorMessage}`);
+                // 3. Send admin proof email via EmailJS
+                const adminTemplateParams = {
+                    customer_name: customerName,
+                    customer_email: customerEmail,
+                    customer_notes: customerNotes,
+                    order_id: orderId,
+                    order_details_table_html: adminProofHtmlTable, // Pass the generated HTML table
+                    admin_email: ADMIN_PROOF_EMAIL // Ensure admin email is available in template if needed
+                    // Add other parameters if your admin template uses them
+                };
+
+                try {
+                    await emailjs.send(EMAILJS_SERVICE_ID, EMAILJS_TEMPLATE_ID_ADMIN, adminTemplateParams, EMAILJS_USER_ID);
+                    console.log('Admin proof email sent successfully via EmailJS!');
+                } catch (emailError) {
+                    console.error('Failed to send admin proof email via EmailJS:', emailError);
+                    showMessageBox(`Order submitted, but failed to send confirmation to admin: ${emailError.text || emailError}`);
                 }
 
-                console.log('Order submitted successfully!');
                 showMessageBox('Order submitted successfully! You will receive a confirmation email shortly. A confirmation has also been sent to the administrators.');
                 currentOrder = []; // Clear the order after successful submission
                 renderOrderList(); // Update the UI
@@ -1499,6 +1527,9 @@
         document.addEventListener('DOMContentLoaded', () => {
             attachEventListeners();
             renderOrderList(); // Initial render of an empty order list
+
+            // Initialize EmailJS with your Public Key
+            emailjs.init(EMAILJS_USER_ID);
 
             // Initialize Firebase instances using the provided config
             app = initializeApp(firebaseConfig); 
