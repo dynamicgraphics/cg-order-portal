@@ -527,7 +527,7 @@
         const EMAILJS_USER_ID = 'LWqR9FL0EyxzFU7jm'; 
 
         // This URL should be obtained by "Publish to web" as CSV from your Google Sheet.
-        const GOOGLE_SHEET_CSV_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vRJeafxZBqtfXhW91V849PmPbr1C0ExMmnvfQ_410tdo4PPDvXNPHC44VrBEd3G7nRpPulT-XC6R79X/pub?gid=1341072506&single=true&output=csv';
+        const GOOGLE_SHEET_CSV_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vRJeafxZBqtfXhW91V849PmPbr1C0ExZmnvfQ_410tdo4PPDvXNPHC44VrBEd3G7nRpPulT-XC6R79X/pub?gid=1341072506&single=true&output=csv'; // REMEMBER TO UPDATE THIS URL WITH THE LATEST PUBLISHED CSV LINK FROM YOUR GOOGLE SHEET!
         const ENVELOPE_SKU = 'CG-SE1';
         const ADMIN_PROOF_EMAIL = 'admin@example.com'; // IMPORTANT: Replace with your actual admin email for receiving proofs
 
@@ -682,6 +682,8 @@
             try {
                 loadingIndicator.textContent = 'Loading product catalog...';
                 loadingIndicator.classList.remove('hidden');
+
+                console.log('Attempting to fetch product catalog from URL:', GOOGLE_SHEET_CSV_URL); // Log the URL being fetched
 
                 const response = await fetch(GOOGLE_SHEET_CSV_URL);
                 if (!response.ok) {
