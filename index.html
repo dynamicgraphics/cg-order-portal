@@ -1465,6 +1465,7 @@
                     customer_notes: customerNotes,
                     // Add other parameters if your customer template uses them
                 };
+                console.log('Sending customer email with parameters:', customerTemplateParams); // LOGGING CUSTOMER PARAMS
 
                 try {
                     // Use the new customer recap template
@@ -1485,6 +1486,7 @@
                     admin_email: ADMIN_PROOF_EMAIL // Ensure admin email is available in template if needed
                     // Add other parameters if your admin template uses them
                 };
+                console.log('Sending admin email with parameters:', adminTemplateParams); // LOGGING ADMIN PARAMS
 
                 try {
                     await emailjs.send(EMAILJS_SERVICE_ID, EMAILJS_TEMPLATE_ID_ADMIN, adminTemplateParams, EMAILJS_USER_ID);
