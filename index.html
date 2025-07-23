@@ -520,13 +520,14 @@
         // const GOOGLE_CLOUD_FUNCTION_URL = 'https://send-order-email-543604960285.us-central1.run.app'; 
         
         // EmailJS Configuration - REPLACE THESE WITH YOUR ACTUAL EMAILJS CREDENTIALS
-        const EMAILJS_SERVICE_ID = 'YOUR_EMAILJS_SERVICE_ID'; // e.g., 'service_abcdefg'
-        const EMAILJS_TEMPLATE_ID_CUSTOMER = 'YOUR_EMAILJS_CUSTOMER_TEMPLATE_ID'; // e.g., 'template_customer_order'
-        const EMAILJS_TEMPLATE_ID_ADMIN = 'YOUR_EMAILJS_ADMIN_TEMPLATE_ID'; // e.g., 'template_admin_proof'
-        const EMAILJS_USER_ID = 'YOUR_EMAILJS_PUBLIC_KEY'; // e.g., 'user_xxxxxxxxxxxxxxxxxxxx'
+        const EMAILJS_SERVICE_ID = 'service_6r03vij'; 
+        const EMAILJS_TEMPLATE_ID_CUSTOMER = 'template_zal2biw'; // This template is now for admin only, or a generic customer template
+        const EMAILJS_TEMPLATE_ID_CUSTOMER_RECAP = 'template_0kb0906'; // NEW: Dedicated template for customer recap
+        const EMAILJS_TEMPLATE_ID_ADMIN = 'template_zal2biw'; // Assuming this template is used for admin
+        const EMAILJS_USER_ID = 'LWqR9FL0EyxzFU7jm'; 
 
         // This URL should be obtained by "Publish to web" as CSV from your Google Sheet.
-        const GOOGLE_SHEET_CSV_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vRJeafxZBqtfXhW91V849PmPbr1C0ExZmnvfQ_410tdo4PPDvXNPHC44VrBEd3G7nRpPulT-XC6R79X/pub?gid=1341072506&single=true&output=csv';
+        const GOOGLE_SHEET_CSV_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vRJeafxZBqtfXhW91V849PmPbr1C0ExMmnvfQ_410tdo4PPDvXNPHC44VrBEd3G7nRpPulT-XC6R79X/pub?gid=1341072506&single=true&output=csv';
         const ENVELOPE_SKU = 'CG-SE1';
         const ADMIN_PROOF_EMAIL = 'admin@example.com'; // IMPORTANT: Replace with your actual admin email for receiving proofs
 
@@ -1295,7 +1296,14 @@
          * @returns {string} HTML string for the customer order summary.
          */
         function generateCustomerOrderSummaryHtml(orderDetails) {
-            let summaryHtml = '<ul style="list-style: none; padding: 0;">';
+            let summaryHtml = `
+                <div style="font-family: 'Inter', sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #eee; border-radius: 8px; background-color: #f9f9f9;">
+                    <p style="font-size: 1em; color: #333; margin-bottom: 15px;">
+                        Here is a recap of the order you sent. Any changes need to be addressed immediately as this confirmation is what will be printed and processed.
+                    </p>
+                    <h3 style="color: #333; margin-bottom: 10px;">Your Order Items:</h3>
+                    <ul style="list-style: none; padding: 0;">
+            `;
             orderDetails.forEach(item => {
                 const quantityDisplay = (item.sku === ENVELOPE_SKU) ? `${item.quantity} (in 1,000s)` : item.quantity;
                 summaryHtml += `
@@ -1305,7 +1313,10 @@
                     </li>
                 `;
             });
-            summaryHtml += '</ul>';
+            summaryHtml += `
+                    </ul>
+                </div>
+            `;
             return summaryHtml;
         }
 
@@ -1454,11 +1465,12 @@
                 };
 
                 try {
-                    await emailjs.send(EMAILJS_SERVICE_ID, EMAILJS_TEMPLATE_ID_CUSTOMER, customerTemplateParams, EMAILJS_USER_ID);
+                    // Use the new customer recap template
+                    await emailjs.send(EMAILJS_SERVICE_ID, EMAILJS_TEMPLATE_ID_CUSTOMER_RECAP, customerTemplateParams, EMAILJS_USER_ID);
                     console.log('Customer email sent successfully via EmailJS!');
                 } catch (emailError) {
                     console.error('Failed to send customer email via EmailJS:', emailError);
-                    showMessageBox(`Order submitted, but failed to send confirmation email to you: ${emailError.text || emailError}`);
+                    showMessageBox(`Order submitted, but failed to send confirmation email to you. Error: ${emailError.text || emailError}`);
                 }
 
                 // 3. Send admin proof email via EmailJS
@@ -1477,10 +1489,10 @@
                     console.log('Admin proof email sent successfully via EmailJS!');
                 } catch (emailError) {
                     console.error('Failed to send admin proof email via EmailJS:', emailError);
-                    showMessageBox(`Order submitted, but failed to send confirmation to admin: ${emailError.text || emailError}`);
+                    showMessageBox(`Order submitted, but failed to send confirmation to admin. Error: ${emailError.text || emailError}`);
                 }
 
-                showMessageBox('Order submitted successfully! You will receive a confirmation email shortly. A confirmation has also been sent to the administrators.');
+                showMessageBox('Order submitted successfully! You will receive a confirmation email shortly.'); // Removed admin email mention
                 currentOrder = []; // Clear the order after successful submission
                 renderOrderList(); // Update the UI
                 customerNotesInput.value = ''; // Clear notes
