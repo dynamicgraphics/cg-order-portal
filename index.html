@@ -1265,14 +1265,14 @@
                 return;
             }
 
-            let proofHtml = ``; // Start with an empty string, no customer info by default
-
+            // Generate HTML for the proof modal using raw items and simple structure
+            let proofHtml = ``; 
             if (customerNotes) {
                 proofHtml += `<p class="text-gray-700 mb-3"><strong>Notes:</strong> ${customerNotes}</p>`;
             }
-
-            // The proofContent div now handles its own flex/wrap, so we just append items
-            proofHtml += `<div class="flex flex-wrap justify-center gap-4">`; // Start a new flex container for items
+            
+            // Flex container for the proof items
+            proofHtml += `<div class="flex flex-wrap justify-center gap-4">`; 
             currentOrder.forEach(item => {
                 const quantityDisplay = (item.sku === ENVELOPE_SKU) ? `${item.quantity} (in 1,000s)` : item.quantity;
                 proofHtml += `
@@ -1293,101 +1293,78 @@
         }
 
         /**
-         * Generates a concise HTML summary of order items for the customer email.
-         * @param {Array<object>} orderDetails Array of order item objects.
-         * @returns {string} HTML string for the customer order summary.
+         * Generates parameters object for EmailJS, including formatted data.
+         * This function centralizes parameter generation.
+         * @param {string} type 'customer' or 'admin'
+         * @param {string} orderId The Firestore document ID for the order (for admin email).
+         * @returns {object} Parameters object for EmailJS.
          */
-        function generateCustomerOrderSummaryHtml(orderDetails) {
-            let summaryHtml = `
-                <div>
-                    <p>Here is a recap of the order you sent. Any changes need to be addressed immediately as this confirmation is what will be printed and processed.</p>
-                    <h3>Your Order Items:</h3>
-                    <ul>
-            `;
-            orderDetails.forEach(item => {
-                const quantityDisplay = (item.sku === ENVELOPE_SKU) ? `${item.quantity} (in 1,000s)` : item.quantity;
-                summaryHtml += `
-                    <li>
-                        <img src="${item.imageUrl}" alt="${item.title}" onerror="this.onerror=null;this.src='https://placehold.co/40x40/CCCCCC/000000?text=No+Image';">
-                        <span>${item.title} (SKU: ${item.sku}) - Qty: ${quantityDisplay}</span>
-                    </li>
-                `;
+        function generateTemplateParams(type, orderId = 'N/A') {
+            const customerName = customerNameInput.value.trim();
+            const customerEmail = customerEmailInput.value.trim();
+            const customerNotes = customerNotesInput.value.trim();
+            const orderDate = new Date().toLocaleString();
+
+            const orderDetailsCleaned = currentOrder.map(item => ({
+                id: item.id || '',
+                title: item.title || '',
+                sku: item.sku || '',
+                quantity: item.quantity || 0,
+                imageUrl: item.imageUrl || 'https://placehold.co/64x64/CCCCCC/000000?text=No+Image',
+                quantity_display: (item.sku === ENVELOPE_SKU) ? `${item.quantity} (in 1,000s)` : `${item.quantity}` // Add a display formatted quantity
+            }));
+
+            // Calculate totals
+            let totalQuantityNonGlow = 0;
+            let totalQuantityGlow = 0;
+            let totalQuantityEnvelope = 0;
+            currentOrder.forEach(item => {
+                if (item.sku === ENVELOPE_SKU) {
+                    totalQuantityEnvelope += item.quantity;
+                } else if (item.title.toLowerCase().includes('glow in the dark') || item.sku.toLowerCase().includes('glow in the dark') || item.sku.toLowerCase().includes('gitd')) {
+                    totalQuantityGlow += item.quantity;
+                } else {
+                    totalQuantityNonGlow += item.quantity;
+                }
             });
-            summaryHtml += `
-                    </ul>
-                </div>
-            `;
-            return summaryHtml;
-        }
+            
+            const totals = {
+                total_nonglow: new Intl.NumberFormat('en-US').format(totalQuantityNonGlow),
+                total_glow: new Intl.NumberFormat('en-US').format(totalQuantityGlow),
+                total_envelope: new Intl.NumberFormat('en-US').format(totalQuantityEnvelope * 1000)
+            };
 
-        /**
-         * Generates the HTML content for the admin proof email (table format).
-         * This HTML is designed to be sent as the body of an email.
-         * @param {object} orderPayload The order data.
-         * @param {string} orderId The Firestore document ID for the order.
-         * @returns {string} HTML string for the admin proof.
-         */
-        function generateAdminProofHtml(orderPayload, orderId) {
-            const customerName = orderPayload.customer_name;
-            const customerEmail = orderPayload.customer_email;
-            const customerNotes = orderPayload.customer_notes;
-            const orderDetails = orderPayload.order_details;
-            const orderDate = new Date().toLocaleString(); // Current date for the proof
 
-            let itemsHtml = '';
-            orderDetails.forEach(item => {
-                const quantityDisplay = (item.sku === ENVELOPE_SKU) ? `${item.quantity} (in 1,000s)` : item.quantity;
-                itemsHtml += `
-                    <tr>
-                        <td>
-                            <img src="${item.imageUrl}" alt="${item.title}" onerror="this.onerror=null;this.src='https://placehold.co/60x60/CCCCCC/000000?text=No+Image';">
-                            <p>${item.sku}</p>
-                        </td>
-                        <td>${item.sku}</td>
-                        <td>${item.title}</td>
-                        <td>${quantityDisplay}</td>
-                    </tr>
-                `;
-            });
-
-            const notesSection = customerNotes ? `
-                <div>
-                    <p>Notes:</p>
-                    <p>${customerNotes}</p>
-                </div>
-            ` : '';
-
-            return `
-                <div>
-                    <h2>Order Confirmation</h2>
-                    <div>
-                        <div>
-                            <p>Customer: ${customerName}</p>
-                            <p>Email: ${customerEmail}</p>
-                        </div>
-                        <div>
-                            <p>Order Date: ${orderDate}</p>
-                            <p>Order ID: ${orderId}</p>
-                        </div>
-                    </div>
-                    ${notesSection}
-                    <h3>Order Items:</h3>
-                    <table border="1" style="width:100%; border-collapse: collapse;">
-                        <thead>
-                            <tr>
-                                <th>Image</th>
-                                <th>SKU</th>
-                                <th>Item</th>
-                                <th>Quantity</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            ${itemsHtml}
-                        </tbody>
-                    </table>
-                    <p>This is an automated confirmation generated from the CG Weekly Order Portal. Please review carefully.</p>
-                </div>
-            `;
+            if (type === 'customer') {
+                return {
+                    customer_name: customerName,
+                    customer_email: customerEmail,
+                    customer_notes: customerNotes,
+                    order_items: orderDetailsCleaned, // Send raw array of objects
+                    order_date: orderDate, // Pass order date
+                    // Include totals for customer if desired in template
+                    total_nonglow: totals.total_nonglow,
+                    total_glow: totals.total_glow,
+                    total_envelope: totals.total_envelope,
+                    raw_notes: customerNotes ? customerNotes : '' // Provide raw notes for conditional rendering
+                };
+            } else if (type === 'admin') {
+                return {
+                    customer_name: customerName,
+                    customer_email: customerEmail,
+                    customer_notes: customerNotes,
+                    order_id: orderId,
+                    order_items: orderDetailsCleaned, // Send raw array of objects
+                    order_date: orderDate, // Pass order date
+                    admin_email: ADMIN_PROOF_EMAIL,
+                     // Include totals for admin if desired in template
+                    total_nonglow: totals.total_nonglow,
+                    total_glow: totals.total_glow,
+                    total_envelope: totals.total_envelope,
+                    raw_notes: customerNotes ? customerNotes : '' // Provide raw notes for conditional rendering
+                };
+            }
+            return {};
         }
 
         /**
@@ -1395,7 +1372,7 @@
          */
         async function handleSubmitOrder() {
             const customerName = customerNameInput.value.trim();
-            const customerEmail = customerEmailInput.value.trim(); // This will now be pre-filled from auth
+            const customerEmail = customerEmailInput.value.trim();
             const customerNotes = customerNotesInput.value.trim();
 
             if (currentOrder.length === 0) {
@@ -1408,106 +1385,92 @@
                 return;
             }
 
-            // Prepare order details for saving to Firestore and sending via EmailJS
-            const orderDetailsForEmail = currentOrder.map(item => ({
-                id: item.id || '',
-                title: item.title || '',
-                sku: item.sku || '',
-                quantity: item.quantity || 0,
-                imageUrl: item.imageUrl || 'https://placehold.co/64x64/CCCCCC/000000?text=No+Image'
-            }));
-
-            // Prepare payload for Firestore
-            const orderPayload = {
+            // Prepare payload for Firestore (same as before)
+            const orderPayloadFirestore = {
                 customer_name: customerName,
                 customer_email: customerEmail,
                 customer_notes: customerNotes,
-                order_details: orderDetailsForEmail
+                order_details: currentOrder.map(item => ({ // Deep copy for Firestore
+                    id: item.id || '',
+                    title: item.title || '',
+                    sku: item.sku || '',
+                    quantity: item.quantity || 0,
+                    imageUrl: item.imageUrl || 'https://placehold.co/64x64/CCCCCC/000000?text=No+Image'
+                }))
             };
 
             // Disable buttons to prevent multiple submissions
             approveProofBtn.disabled = true;
             reviseOrderBtn.disabled = true;
-            generateProofBtn.disabled = true; // Disable generate proof button during submission
+            generateProofBtn.disabled = true; 
             submitOrderButton.disabled = true;
-            submitOrderButton.textContent = 'Submitting...'; // Update text for main button
+            submitOrderButton.textContent = 'Submitting...';
 
             try {
                 // 1. Save order to Firestore FIRST to get the ID
                 let orderDocRef;
                 if (currentUserId) {
-                    const orderToSave = {
-                        ...orderPayload,
-                        timestamp: serverTimestamp(),
-                        userId: currentUserId
-                    };
-                    orderDocRef = await addDoc(collection(db, `artifacts/${appId}/users/${currentUserId}/orders`), orderToSave);
+                    orderDocRef = await addDoc(collection(db, `artifacts/${appId}/users/${currentUserId}/orders`), orderPayloadFirestore);
                     console.log('Order saved to Firestore successfully! ID:', orderDocRef.id);
                 } else {
                     console.warn('User not authenticated, skipping Firestore save.');
                 }
 
-                const orderId = orderDocRef ? orderDocRef.id : 'N/A'; // Get the generated ID
+                const orderId = orderDocRef ? orderDocRef.id : 'N/A';
 
-                // Generate HTML content for EmailJS templates
-                const customerOrderSummaryHtml = generateCustomerOrderSummaryHtml(orderDetailsForEmail);
-                const adminProofHtmlTable = generateAdminProofHtml(orderPayload, orderId); // This is the full HTML for admin
+                // 2. Generate parameters for customer and admin emails
+                const customerTemplateParams = generateTemplateParams('customer', orderId);
+                const adminTemplateParams = generateTemplateParams('admin', orderId);
 
-                // 2. Send customer confirmation email via EmailJS
-                const customerTemplateParams = {
-                    customer_name: customerName,
-                    customer_email: customerEmail,
-                    order_summary_html: customerOrderSummaryHtml,
-                    customer_notes: customerNotes,
-                    // Add other parameters if your customer template uses them
-                };
-                console.log('Sending customer email with parameters:', customerTemplateParams); // LOGGING CUSTOMER PARAMS
+                console.log('Sending customer email with parameters:', customerTemplateParams);
+                console.log('Sending admin email with parameters:', adminTemplateParams);
+
+                // 3. Send emails via EmailJS
+                let customerEmailSuccess = false;
+                let adminEmailSuccess = false;
 
                 try {
-                    // Use the new customer recap template
                     await emailjs.send(EMAILJS_SERVICE_ID, EMAILJS_TEMPLATE_ID_CUSTOMER_RECAP, customerTemplateParams, EMAILJS_USER_ID);
                     console.log('Customer email sent successfully via EmailJS!');
+                    customerEmailSuccess = true;
                 } catch (emailError) {
                     console.error('Failed to send customer email via EmailJS:', emailError);
                     showMessageBox(`Order submitted, but failed to send confirmation email to you. Error: ${emailError.text || emailError}`);
                 }
 
-                // 3. Send admin proof email via EmailJS
-                const adminTemplateParams = {
-                    customer_name: customerName,
-                    customer_email: customerEmail,
-                    customer_notes: customerNotes,
-                    order_id: orderId,
-                    order_details_table_html: adminProofHtmlTable, // Pass the generated HTML table
-                    admin_email: ADMIN_PROOF_EMAIL // Ensure admin email is available in template if needed
-                    // Add other parameters if your admin template uses them
-                };
-                console.log('Sending admin email with parameters:', adminTemplateParams); // LOGGING ADMIN PARAMS
-
                 try {
                     await emailjs.send(EMAILJS_SERVICE_ID, EMAILJS_TEMPLATE_ID_ADMIN, adminTemplateParams, EMAILJS_USER_ID);
                     console.log('Admin proof email sent successfully via EmailJS!');
+                    adminEmailSuccess = true;
                 } catch (emailError) {
                     console.error('Failed to send admin proof email via EmailJS:', emailError);
                     showMessageBox(`Order submitted, but failed to send confirmation to admin. Error: ${emailError.text || emailError}`);
                 }
 
-                showMessageBox('Order submitted successfully! You will receive a confirmation email shortly.'); // Removed admin email mention
-                currentOrder = []; // Clear the order after successful submission
-                renderOrderList(); // Update the UI
-                customerNotesInput.value = ''; // Clear notes
-                proofModal.classList.add('hidden'); // Hide proof modal on successful submission
+                if (customerEmailSuccess && adminEmailSuccess) {
+                    showMessageBox('Order submitted successfully! You will receive a confirmation email shortly.');
+                } else if (customerEmailSuccess) {
+                    showMessageBox('Order submitted successfully! You will receive a confirmation email shortly. Admin email failed to send.');
+                } else if (adminEmailSuccess) {
+                    showMessageBox('Order submitted successfully! Confirmation email to you failed, but admin received proof.');
+                } else {
+                     showMessageBox('Order submitted, but both confirmation emails failed to send. Please contact support.');
+                }
+
+                currentOrder = []; 
+                renderOrderList(); 
+                customerNotesInput.value = ''; 
+                proofModal.classList.add('hidden');
 
             } catch (error) {
                 console.error('Error submitting order or saving to Firestore:', error);
                 showMessageBox('An error occurred while submitting your order. Please check your internet connection and try again.');
             } finally {
-                // Re-enable buttons
                 approveProofBtn.disabled = false;
                 reviseOrderBtn.disabled = false;
-                generateProofBtn.disabled = false; // Re-enable generate proof button
+                generateProofBtn.disabled = false; 
                 submitOrderButton.disabled = false;
-                submitOrderButton.textContent = 'Submit Order'; // Reset text for main button
+                submitOrderButton.textContent = 'Submit Order';
             }
         }
 
@@ -1550,8 +1513,8 @@
 
             onAuthStateChanged(auth, async (user) => {
                 if (user) {
-                    currentUserId = user.uid; // Assign to global variable
-                    currentUserEmail = user.email; // Assign to global variable
+                    currentUserId = user.uid; 
+                    currentUserEmail = user.email; 
                     
                     // Fetch user's name from Firestore
                     const userProfileDocRef = doc(db, `artifacts/${appId}/users_profile`, currentUserId);
@@ -1559,57 +1522,50 @@
                     if (userProfileSnap.exists()) {
                         currentUserName = userProfileSnap.data().name;
                     } else {
-                        currentUserName = currentUserEmail; // Fallback to email if name not found
+                        currentUserName = currentUserEmail; 
                         console.warn('User profile not found for UID:', currentUserId, 'Falling back to email for display.');
                     }
 
-                    currentUserNameSpan.textContent = currentUserName || 'Anonymous User'; // Display name or 'Anonymous User'
+                    currentUserNameSpan.textContent = currentUserName || 'Anonymous User'; 
                     userIdDisplay.classList.remove('hidden');
                     
-                    // Explicitly manage display property for main content and overlay
-                    mainContainer.style.display = 'flex'; // Changed to flex
-                    mainContainer.classList.remove('hidden'); // Ensure hidden class is removed
+                    mainContainer.style.display = 'flex'; 
+                    mainContainer.classList.remove('hidden'); 
                     
-                    authOverlay.style.display = 'none'; // Explicitly hide the overlay
-                    authOverlay.classList.add('hidden'); // Ensure hidden class is added
+                    authOverlay.style.display = 'none'; 
+                    authOverlay.classList.add('hidden'); 
 
-                    // Prefill Email field from auth, make it readonly
                     customerEmailInput.value = currentUserEmail || ''; 
-                    // Autofill Name field
                     customerNameInput.value = currentUserName || '';
 
                     console.log('Firebase authenticated. User ID:', currentUserId, 'Email:', currentUserEmail, 'Name:', currentUserName);
-                    listenForOrderHistory(); // Start listening for history
-                    fetchProductCatalog(); // Attempt to fetch product catalog from Google Sheet
+                    listenForOrderHistory(); 
+                    fetchProductCatalog(); 
                 } else {
                     console.log('No Firebase user signed in. Showing authentication prompt.');
-                    currentUserId = null; // Assign to global variable
-                    currentUserEmail = null; // Assign to global variable
-                    currentUserName = null; // Clear name on logout
+                    currentUserId = null; 
+                    currentUserEmail = null; 
+                    currentUserName = null; 
                     userIdDisplay.classList.add('hidden');
                     
-                    // Explicitly manage display property for main content and overlay
-                    mainContainer.style.display = 'none'; // Hide main content
-                    mainContainer.classList.add('hidden'); // Ensure hidden class is added
+                    mainContainer.style.display = 'none'; 
+                    mainContainer.classList.add('hidden'); 
                     
-                    authOverlay.style.display = 'flex'; // Explicitly show the overlay
-                    authOverlay.classList.remove('hidden'); // Ensure hidden class is removed
+                    authOverlay.style.display = 'flex'; 
+                    authOverlay.classList.remove('hidden'); 
                     
-                    // Crucially, ensure name input is hidden when showing login form
                     authNameInput.classList.add('hidden'); 
-                    authNameInput.style.display = 'none'; // Explicitly hide here too
-                    isLoginMode = true; // Reset to login mode
+                    authNameInput.style.display = 'none'; 
+                    isLoginMode = true; 
                     authTitle.textContent = 'Login to Access Portal';
                     authSubmitButton.textContent = 'Login';
                     toggleAuthModeText.textContent = "Don't have an account?";
                     toggleAuthMode.textContent = 'Sign Up';
 
-                    // Clear prefilled fields if logged out
                     customerNameInput.value = '';
                     customerEmailInput.value = '';
-                    currentOrder = []; // Clear current order on logout
-                    renderOrderList(); // Update current order display
-                    // Clear both desktop and mobile history lists
+                    currentOrder = []; 
+                    renderOrderList(); 
                     orderHistoryListDesktop.innerHTML = '<div class="p-4 text-gray-500 text-center" id="emptyOrderHistoryMessageDesktop">No past orders found.</div>';
                     orderHistoryListMobile.innerHTML = '<div class="p-4 text-gray-500 text-center" id="emptyOrderHistoryMessageMobile">No past orders found.</div>';
                 }
