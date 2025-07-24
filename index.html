@@ -1308,7 +1308,7 @@
                 const quantityDisplay = (item.sku === ENVELOPE_SKU) ? `${item.quantity} (in 1,000s)` : item.quantity;
                 summaryHtml += `
                     <li>
-                        <img src="${item.imageUrl}" alt="${item.title}" style="max-width: 40px; max-height: 40px;" onerror="this.onerror=null;this.src='https://placehold.co/40x40/CCCCCC/000000?text=No+Image';">
+                        <img src="${item.imageUrl}" alt="${item.title}" onerror="this.onerror=null;this.src='https://placehold.co/40x40/CCCCCC/000000?text=No+Image';">
                         <span>${item.title} (SKU: ${item.sku}) - Qty: ${quantityDisplay}</span>
                     </li>
                 `;
@@ -1340,7 +1340,7 @@
                 itemsHtml += `
                     <tr>
                         <td>
-                            <img src="${item.imageUrl}" alt="${item.title}" style="max-width: 60px; max-height: 60px;" onerror="this.onerror=null;this.src='https://placehold.co/60x60/CCCCCC/000000?text=No+Image';">
+                            <img src="${item.imageUrl}" alt="${item.title}" onerror="this.onerror=null;this.src='https://placehold.co/60x60/CCCCCC/000000?text=No+Image';">
                             <p>${item.sku}</p>
                         </td>
                         <td>${item.sku}</td>
