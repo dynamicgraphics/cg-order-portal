@@ -330,10 +330,13 @@
         #proofContent .proof-item-details {
             margin-left: 0; /* Remove horizontal margin for stacked layout */
             margin-top: 0.5rem; /* Space between image and details */
+            width: 100%; /* Ensure it takes full width of the card */
         }
         #proofContent .proof-item-details p {
             margin-bottom: 0.125rem; /* Smaller spacing for text lines */
             font-size: 0.875rem; /* text-sm */
+            word-break: break-word; /* Ensure long words break and wrap */
+            overflow-wrap: break-word; /* Alternative for word-break */
         }
         #proofContent .proof-item-details p:last-child {
             margin-bottom: 0;
@@ -1372,7 +1375,7 @@
          */
         async function handleSubmitOrder() {
             const customerName = customerNameInput.value.trim();
-            const customerEmail = customerEmailInput.value.trim();
+            const customerEmail = customerEmailInput.value.trim(); // This will now be pre-filled from auth
             const customerNotes = customerNotesInput.value.trim();
 
             if (currentOrder.length === 0) {
