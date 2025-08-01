@@ -538,8 +538,8 @@
 
 
         // --- CONFIGURATION ---
-        // Removed Google Cloud Function URL, now using EmailJS
-        // const GOOGLE_CLOUD_FUNCTION_URL = 'https://send-order-email-543604960285.us-central1.run.app'; 
+        // IMPORTANT: Replace with your actual Cloud Function URL after deployment!
+        const ZIP_CLOUD_FUNCTION_URL = 'YOUR_CLOUD_FUNCTION_URL_HERE'; 
         
         // EmailJS Configuration - REPLACE THESE WITH YOUR ACTUAL EMAILJS CREDENTIALS
         const EMAILJS_SERVICE_ID = 'service_6r03vij'; 
@@ -549,7 +549,7 @@
         const EMAILJS_USER_ID = 'LWqR9FL0EyxzFU7jm'; 
 
         // This URL should be obtained by "Publish to web" as CSV from your Google Sheet.
-        const GOOGLE_SHEET_CSV_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vRJeafxZBqtfXhW91V849PmPbr1C0ExZmnvfQ_410tdo4PPDvXNPHC44VrBEd3G7nRpPulT-XC6R79X/pub?gid=1341072506&single=true&output=csv'; // REMEMBER TO UPDATE THIS URL WITH THE LATEST PUBLISHED CSV LINK FROM YOUR GOOGLE SHEET!
+        const GOOGLE_SHEET_CSV_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vRJeafxZBqtfXhW91V849PmPbr1C0ExMmnvfQ_410tdo4PPDvXNPHC44VrBEd3G7nRpPulT-XC6R79X/pub?gid=1341072506&single=true&output=csv'; // REMEMBER TO UPDATE THIS URL WITH THE LATEST PUBLISHED CSV LINK FROM YOUR GOOGLE SHEET!
         const ENVELOPE_SKU = 'CG-SE1';
         const ADMIN_PROOF_EMAIL = 'admin@example.com'; // IMPORTANT: Replace with your actual admin email for receiving proofs
 
@@ -603,7 +603,7 @@
 
         // New elements for mobile order history toggle
         const floatingOrderHistoryBtn = document.getElementById('floatingOrderHistoryBtn');
-        const orderHistoryModal = document.getElementById('orderHistoryModal'); // CORRECTED THIS LINE
+        const orderHistoryModal = document.getElementById('orderHistoryModal'); 
         const orderHistoryModalCloseBtn = document.getElementById('orderHistoryModalCloseBtn');
 
         // New elements for Proofing System
@@ -818,7 +818,7 @@
                         <div class="flex items-center justify-between p-4 bg-white hover:bg-gray-50 transition duration-150">
                             <div class="flex items-center">
                                 <img src="${item.imageUrl}" alt="${item.title}" class="w-16 h-16 object-contain rounded-lg mr-4" onerror="this.onerror=null;this.src='https://placehold.co/64x64/CCCCCC/000000?text=No+Image';">
-                                <div>
+                                <div class="min-w-0">
                                     <h4 class="font-semibold text-gray-800 break-words w-full">${item.title}</h4>
                                     <p class="text-sm text-gray-600">SKU: ${item.sku} - Qty: ${quantityDisplay}${packingDetailsDisplay}</p>
                                 </div>
@@ -1431,9 +1431,10 @@
          * This function centralizes parameter generation.
          * @param {string} type 'customer' or 'admin'
          * @param {string} orderId The Firestore document ID for the order (for admin email).
+         * @param {string|null} zipDownloadUrl The URL to download all custom PNGs, or null.
          * @returns {object} Parameters object for EmailJS.
          */
-        function generateTemplateParams(type, orderId = 'N/A') {
+        function generateTemplateParams(type, orderId = 'N/A', zipDownloadUrl = null) {
             const customerName = customerNameInput.value.trim();
             const customerEmail = customerEmailInput.value.trim();
             const customerNotes = customerNotesInput.value.trim();
@@ -1492,6 +1493,7 @@
                     order_items: orderDetailsCleaned, // Send raw array of objects
                     order_date: orderDate, // Pass order date
                     admin_email: ADMIN_PROOF_EMAIL,
+                    zip_download_url: zipDownloadUrl, // NEW: Pass the ZIP download URL
                      // Include totals for admin if desired in template
                     total_nonglow: totals.total_nonglow,
                     total_glow: totals.total_glow,
@@ -1553,15 +1555,53 @@
                 }
 
                 const orderId = orderDocRef ? orderDocRef.id : 'N/A';
+                let zipDownloadUrl = null; // Initialize zipDownloadUrl
 
-                // 2. Generate parameters for customer and admin emails
+                // 2. Identify custom uploads and call Cloud Function to zip them
+                const customUploadImageUrls = currentOrder
+                    .filter(item => item.sku === 'CUSTOM_UPLOAD' && item.imageUrl)
+                    .map(item => item.imageUrl);
+
+                if (customUploadImageUrls.length > 0) {
+                    showMessageBox('Processing custom uploads for download...');
+                    try {
+                        const zipFunctionResponse = await fetch(ZIP_CLOUD_FUNCTION_URL, {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json',
+                            },
+                            body: JSON.stringify({
+                                orderId: orderId,
+                                customerEmail: customerEmail,
+                                imageUrls: customUploadImageUrls,
+                                bucketName: firebaseConfig.storageBucket // Pass the correct bucket name
+                            }),
+                        });
+
+                        if (!zipFunctionResponse.ok) {
+                            const errorText = await zipFunctionResponse.text();
+                            throw new Error(`Cloud Function error: ${zipFunctionResponse.status} - ${errorText}`);
+                        }
+
+                        const zipResult = await zipFunctionResponse.json();
+                        zipDownloadUrl = zipResult.downloadUrl;
+                        console.log('ZIP download URL from Cloud Function:', zipDownloadUrl);
+                        hideMessageBox(); // Hide processing message
+                    } catch (zipError) {
+                        console.error('Error calling Cloud Function to zip images:', zipError);
+                        showMessageBox(`Warning: Could not generate "Download All PNGs" link. Error: ${zipError.message}`);
+                        // Continue with order submission even if zip fails
+                    }
+                }
+
+                // 3. Generate parameters for customer and admin emails, including zipDownloadUrl
                 const customerTemplateParams = generateTemplateParams('customer', orderId);
-                const adminTemplateParams = generateTemplateParams('admin', orderId);
+                const adminTemplateParams = generateTemplateParams('admin', orderId, zipDownloadUrl); // Pass zipDownloadUrl here
 
                 console.log('Sending customer email with parameters:', customerTemplateParams);
                 console.log('Sending admin email with parameters:', adminTemplateParams);
 
-                // 3. Send emails via EmailJS
+                // 4. Send emails via EmailJS
                 let customerEmailSuccess = false;
                 let adminEmailSuccess = false;
 
