@@ -402,6 +402,23 @@
                 <div id="noResults" class="hidden text-center text-gray-500 mt-4">No products found. Please try a different search term.</div>
             </div>
 
+            <!-- Custom Uploads Section -->
+            <div class="bg-indigo-50 p-4 rounded-lg">
+                <h2 class="text-2xl font-bold text-gray-800 mb-4">Custom Uploads (New Designs)</h2>
+                <p class="text-gray-600 mb-4 text-sm">Upload new PNG designs here. Each upload will default to 2000 pieces (1500 in bags of 5, 500 bulk in 100s).</p>
+                <div class="flex flex-col sm:flex-row items-center gap-4">
+                    <input type="file" id="customFileUpload" accept="image/png" multiple
+                           class="flex-grow p-2 border border-gray-300 rounded-lg focus:ring-indigo-500 focus:border-indigo-500 shadow-sm text-sm">
+                    <button id="uploadCustomFileBtn"
+                            class="px-6 py-3 bg-indigo-600 text-white rounded-lg font-semibold hover:bg-indigo-700 transition duration-200 shadow-md">
+                        Upload & Add to Order
+                    </button>
+                </div>
+                <div id="customUploadList" class="mt-4 space-y-2">
+                    <!-- Uploaded file previews and status will appear here -->
+                </div>
+            </div>
+
             <!-- Order List Section -->
             <div class="bg-green-50 p-4 rounded-lg">
                 <h2 class="text-2xl font-bold text-gray-800 mb-4">Your Current Order</h2>
@@ -502,6 +519,8 @@
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
         import { getAuth, onAuthStateChanged, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
         import { getFirestore, collection, addDoc, query, onSnapshot, serverTimestamp, doc, getDoc, setDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+        import { getStorage, ref, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-storage.js";
+
 
         // --- GLOBAL FIREBASE VARIABLES (Provided by Canvas Environment) ---
         // The appId is provided by the Canvas environment.
@@ -595,10 +614,15 @@
         const approveProofBtn = document.getElementById('approveProofBtn');
         const reviseOrderBtn = document.getElementById('reviseOrderBtn');
 
+        // New elements for Custom Uploads
+        const customFileUploadInput = document.getElementById('customFileUpload');
+        const uploadCustomFileBtn = document.getElementById('uploadCustomFileBtn');
+        const customUploadList = document.getElementById('customUploadList');
+
 
         let isLoginMode = true; // State for login/signup toggle
 
-        let app, db, auth; 
+        let app, db, auth, storage; // Added storage
         let currentUserId = null; // To store the authenticated user's UID
         let currentUserEmail = null; // To store the authenticated user's email
         let currentUserName = null; // To store the authenticated user's name
@@ -788,13 +812,15 @@
                 emptyOrderMessage.classList.add('hidden');
                 currentOrder.forEach(item => {
                     const quantityDisplay = (item.sku === ENVELOPE_SKU) ? `${item.quantity} (in 1,000s)` : item.quantity;
+                    const packingDetailsDisplay = item.packing_details ? `<br><span class="text-xs text-gray-500">Packing: ${item.packing_details}</span>` : '';
+
                     const orderItemHtml = `
                         <div class="flex items-center justify-between p-4 bg-white hover:bg-gray-50 transition duration-150">
                             <div class="flex items-center">
                                 <img src="${item.imageUrl}" alt="${item.title}" class="w-16 h-16 object-contain rounded-lg mr-4" onerror="this.onerror=null;this.src='https://placehold.co/64x64/CCCCCC/000000?text=No+Image';">
                                 <div class="min-w-0">
                                     <h4 class="font-semibold text-gray-800 break-words w-full">${item.title}</h4>
-                                    <p class="text-sm text-gray-600">SKU: ${item.sku} - Qty: ${quantityDisplay}</p>
+                                    <p class="text-sm text-gray-600">SKU: ${item.sku} - Qty: ${quantityDisplay}${packingDetailsDisplay}</p>
                                 </div>
                             </div>
                             <button class="px-3 py-1 bg-red-500 text-white rounded-lg hover:bg-red-600 transition duration-200 remove-from-order-btn"
@@ -890,10 +916,11 @@
                         <div class="ml-4">
                             ${order.order_details.map(item => {
                                 const quantityDisplay = (item.sku === ENVELOPE_SKU) ? `${item.quantity} (in 1,000s)` : item.quantity;
+                                const packingDetailsDisplay = item.packing_details ? `<br><span class="text-xs text-gray-500">Packing: ${item.packing_details}</span>` : '';
                                 return `
                                     <div class="flex items-center mb-2">
                                         <img src="${item.imageUrl}" alt="${item.title}" class="w-10 h-10 object-contain rounded-md mr-2" onerror="this.onerror=null;this.src='https://placehold.co/40x40/CCCCCC/000000?text=No+Image';">
-                                        <p class="text-sm text-gray-700">${item.title} (SKU: ${item.sku}) - Qty: ${quantityDisplay}</p>
+                                        <p class="text-sm text-gray-700">${item.title} (SKU: ${item.sku}) - Qty: ${quantityDisplay}${packingDetailsDisplay}</p>
                                     </div>
                                 `;
                             }).join('')}
@@ -1012,6 +1039,9 @@
                     proofModal.classList.add('hidden');
                 }
             });
+
+            // Custom Uploads Event Listeners
+            uploadCustomFileBtn.addEventListener('click', handleFileUpload);
         }
 
         /**
@@ -1251,6 +1281,105 @@
         }
 
         /**
+         * Handles file upload to Firebase Storage and adds to current order.
+         */
+        async function handleFileUpload() {
+            if (!currentUserId) {
+                showMessageBox('Please log in to upload custom designs.');
+                return;
+            }
+
+            const files = customFileUploadInput.files;
+            if (files.length === 0) {
+                showMessageBox('Please select one or more PNG files to upload.');
+                return;
+            }
+
+            // Clear previous upload list display
+            customUploadList.innerHTML = '';
+
+            for (const file of files) {
+                if (file.type !== 'image/png') {
+                    showMessageBox(`Skipping "${file.name}": Only PNG files are allowed.`);
+                    continue;
+                }
+                if (file.size > 5 * 1024 * 1024) { // 5MB limit
+                    showMessageBox(`Skipping "${file.name}": File size exceeds 5MB limit.`);
+                    continue;
+                }
+
+                const uploadItemId = `upload-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`;
+                const fileNameWithoutExt = file.name.split('.').slice(0, -1).join('.');
+                const uploadItemDiv = document.createElement('div');
+                uploadItemDiv.id = uploadItemId;
+                uploadItemDiv.className = 'flex items-center justify-between p-2 border border-gray-200 rounded-md bg-white shadow-sm';
+                uploadItemDiv.innerHTML = `
+                    <div class="flex items-center">
+                        <img src="https://placehold.co/40x40/CCCCCC/000000?text=..." alt="Loading" class="w-10 h-10 object-contain rounded-md mr-2">
+                        <div>
+                            <p class="font-semibold text-gray-800">${fileNameWithoutExt}</p>
+                            <p class="text-xs text-gray-500" id="${uploadItemId}-status">Uploading...</p>
+                        </div>
+                    </div>
+                `;
+                customUploadList.appendChild(uploadItemDiv);
+
+                try {
+                    // Create a unique path for each file in Firebase Storage
+                    const storagePath = `artifacts/${appId}/user_uploads/${currentUserId}/${Date.now()}-${file.name}`;
+                    const fileRef = ref(storage, storagePath);
+
+                    const snapshot = await uploadBytes(fileRef, file);
+                    const downloadURL = await getDownloadURL(snapshot.ref);
+
+                    const uploadedItem = {
+                        id: uploadItemId, // Use this ID for removal from currentOrder
+                        title: fileNameWithoutExt,
+                        sku: 'CUSTOM_UPLOAD', // Special SKU
+                        quantity: 2000, // Default quantity
+                        imageUrl: downloadURL,
+                        packing_details: '1500 in bags of 5, 500 bulk in 100s' // Hardcoded packing
+                    };
+
+                    currentOrder.unshift(uploadedItem); // Add to the top of the order
+                    renderOrderList();
+
+                    // Update UI for successful upload
+                    const statusElem = document.getElementById(`${uploadItemId}-status`);
+                    if (statusElem) {
+                        statusElem.textContent = 'Upload complete! Added to order.';
+                        statusElem.classList.remove('text-gray-500');
+                        statusElem.classList.add('text-green-600');
+                    }
+                    const imgElem = uploadItemDiv.querySelector('img');
+                    if (imgElem) {
+                        imgElem.src = downloadURL;
+                        imgElem.alt = fileNameWithoutExt;
+                    }
+                    // Optionally, remove the upload progress item after a short delay
+                    setTimeout(() => {
+                        if (uploadItemDiv.parentNode) {
+                            uploadItemDiv.parentNode.removeChild(uploadItemDiv);
+                        }
+                    }, 3000); // Remove after 3 seconds
+                    
+                } catch (error) {
+                    console.error('Error uploading file:', file.name, error);
+                    const statusElem = document.getElementById(`${uploadItemId}-status`);
+                    if (statusElem) {
+                        statusElem.textContent = `Upload failed for ${file.name}.`;
+                        statusElem.classList.remove('text-gray-500');
+                        statusElem.classList.add('text-red-600');
+                    }
+                    showMessageBox(`Failed to upload ${file.name}. Please try again.`);
+                }
+            }
+            // Clear the file input after processing all files
+            customFileUploadInput.value = '';
+        }
+
+
+        /**
          * Generates the proof content and displays the proof modal.
          */
         function generateProofAndShowModal() {
@@ -1278,13 +1407,15 @@
             proofHtml += `<div class="flex flex-wrap justify-center gap-4">`; 
             currentOrder.forEach(item => {
                 const quantityDisplay = (item.sku === ENVELOPE_SKU) ? `${item.quantity} (in 1,000s)` : item.quantity;
+                const packingDetailsDisplay = item.packing_details ? `<br><span class="text-xs text-gray-500">Packing: ${item.packing_details}</span>` : '';
+
                 proofHtml += `
                     <div class="proof-item">
                         <img src="${item.imageUrl}" alt="${item.title}" onerror="this.onerror=null;this.src='https://placehold.co/50x50/CCCCCC/000000?text=No+Image';" class="proof-item-img">
                         <p class="text-xs text-gray-600 mt-1">${item.sku}</p>
                         <div class="proof-item-details">
                             <p class="font-medium text-gray-800">${item.title}</p>
-                            <p class="text-sm text-gray-600">Qty: ${quantityDisplay}</p>
+                            <p class="text-sm text-gray-600">Qty: ${quantityDisplay}${packingDetailsDisplay}</p>
                         </div>
                     </div>
                 `;
@@ -1314,7 +1445,8 @@
                 sku: item.sku || '',
                 quantity: item.quantity || 0,
                 imageUrl: item.imageUrl || 'https://placehold.co/64x64/CCCCCC/000000?text=No+Image',
-                quantity_display: (item.sku === ENVELOPE_SKU) ? `${item.quantity} (in 1,000s)` : `${item.quantity}` // Add a display formatted quantity
+                quantity_display: (item.sku === ENVELOPE_SKU) ? `${item.quantity} (in 1,000s)` : `${item.quantity}`, // Add a display formatted quantity
+                packing_details: item.packing_details || '' // Include packing details
             }));
 
             // Calculate totals
@@ -1398,7 +1530,8 @@
                     title: item.title || '',
                     sku: item.sku || '',
                     quantity: item.quantity || 0,
-                    imageUrl: item.imageUrl || 'https://placehold.co/64x64/CCCCCC/000000?text=No+Image'
+                    imageUrl: item.imageUrl || 'https://placehold.co/64x64/CCCCCC/000000?text=No+Image',
+                    packing_details: item.packing_details || '' // Include packing details for Firestore
                 }))
             };
 
@@ -1464,6 +1597,7 @@
                 renderOrderList(); 
                 customerNotesInput.value = ''; 
                 proofModal.classList.add('hidden');
+                customUploadList.innerHTML = ''; // Clear custom upload list display
 
             } catch (error) {
                 console.error('Error submitting order or saving to Firestore:', error);
@@ -1513,6 +1647,7 @@
             app = initializeApp(firebaseConfig); 
             auth = getAuth(app);
             db = getFirestore(app);
+            storage = getStorage(app); // Initialize Firebase Storage
 
             onAuthStateChanged(auth, async (user) => {
                 if (user) {
