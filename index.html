@@ -531,7 +531,7 @@
             apiKey: "AIzaSyBdp15BtxFu-VPkuOdkiX1WyXgAMLrj124",
             authDomain: "cg-portal-backend.firebaseapp.com",
             projectId: "cg-portal-backend",
-            storageBucket: "cg-portal-backend.firebasestorage.app", // REVERTED TO THIS VALUE
+            storageBucket: "cg-portal-backend.firebasestorage.app", 
             messagingSenderId: "543604960285",
             appId: "1:543604960285:web:03b481d610a5eb2fdcaaf4",
         };
@@ -603,7 +603,7 @@
 
         // New elements for mobile order history toggle
         const floatingOrderHistoryBtn = document.getElementById('floatingOrderHistoryBtn');
-        const orderHistoryModal = document = document.getElementById('orderHistoryModal');
+        const orderHistoryModal = document.getElementById('orderHistoryModal'); // CORRECTED THIS LINE
         const orderHistoryModalCloseBtn = document.getElementById('orderHistoryModalCloseBtn');
 
         // New elements for Proofing System
@@ -818,7 +818,7 @@
                         <div class="flex items-center justify-between p-4 bg-white hover:bg-gray-50 transition duration-150">
                             <div class="flex items-center">
                                 <img src="${item.imageUrl}" alt="${item.title}" class="w-16 h-16 object-contain rounded-lg mr-4" onerror="this.onerror=null;this.src='https://placehold.co/64x64/CCCCCC/000000?text=No+Image';">
-                                <div class="min-w-0">
+                                <div>
                                     <h4 class="font-semibold text-gray-800 break-words w-full">${item.title}</h4>
                                     <p class="text-sm text-gray-600">SKU: ${item.sku} - Qty: ${quantityDisplay}${packingDetailsDisplay}</p>
                                 </div>
