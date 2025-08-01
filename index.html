@@ -549,7 +549,7 @@
         const EMAILJS_USER_ID = 'LWqR9FL0EyxzFU7jm'; 
 
         // This URL should be obtained by "Publish to web" as CSV from your Google Sheet.
-        const GOOGLE_SHEET_CSV_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vRJeafxZBqtfXhW91V849PmPbr1C0ExZmnvfQ_410tdo4PPDvXNPHC44VrBEd3G7nRpPulT-XC6R79X/pub?gid=1341072506&single=true&output=csv'; // FIXED: Changed pubhtml to pub and ensured output=csv
+        const GOOGLE_SHEET_CSV_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vRJeafxZBqtfXhW91V849PmPbr1C0ExZmnvfQ_410tdo4PPDvXNPHC44VrBEd3G7nRpPulT-XC6R79X/pub?gid=1341072506&single=true&output=csv'; 
         const ENVELOPE_SKU = 'CG-SE1';
         const ADMIN_PROOF_EMAIL = 'admin@example.com'; // IMPORTANT: Replace with your actual admin email for receiving proofs
 
@@ -1427,6 +1427,46 @@
         }
 
         /**
+         * Generates the HTML table for order items to be embedded in the admin email.
+         * @param {Array<object>} orderItems The array of order item objects.
+         * @returns {string} HTML string for the table body.
+         */
+        function generateAdminOrderTableHtml(orderItems) {
+            let tableRowsHtml = '';
+            orderItems.forEach(item => {
+                const quantityDisplay = (item.sku === ENVELOPE_SKU) ? `${item.quantity} (in 1,000s)` : item.quantity;
+                const packingDetailsDisplay = item.packing_details ? `<br><span style="font-size: 0.75em; color: #666;">Packing: ${item.packing_details}</span>` : '';
+
+                tableRowsHtml += `
+                    <tr style="vertical-align: top;">
+                        <td style="padding: 8px; border: 1px solid #ddd; text-align: center;">
+                            <img src="${item.imageUrl}" alt="${item.title}" style="max-width: 60px; max-height: 60px; object-fit: contain; border-radius: 4px; border: 1px solid #e2e8f0; box-shadow: 0 1px 2px rgba(0,0,0,0.1); display: block; margin: 0 auto;" onerror="this.onerror=null;this.src='https://placehold.co/60x60/CCCCCC/000000?text=No+Image';">
+                        </td>
+                        <td style="padding: 8px; border: 1px solid #ddd;">${item.sku}</td>
+                        <td style="padding: 8px; border: 1px solid #ddd;">${item.title}${packingDetailsDisplay}</td>
+                        <td style="padding: 8px; border: 1px solid #ddd; text-align: right;">${quantityDisplay}</td>
+                    </tr>
+                `;
+            });
+            return `
+                <table style="width: 100%; border-collapse: collapse; border: 1px solid #ddd; margin-top: 15px;">
+                    <thead>
+                        <tr style="background-color: #f2f2f2;">
+                            <th style="padding: 8px; border: 1px solid #ddd; text-align: center; width: 100px;">Image</th>
+                            <th style="padding: 8px; border: 1px solid #ddd; text-align: left;">SKU</th>
+                            <th style="padding: 8px; border: 1px solid #ddd; text-align: left;">Item</th>
+                            <th style="padding: 8px; border: 1px solid #ddd; text-align: right; width: 80px;">Quantity</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${tableRowsHtml}
+                    </tbody>
+                </table>
+            `;
+        }
+
+
+        /**
          * Generates parameters object for EmailJS, including formatted data.
          * This function centralizes parameter generation.
          * @param {string} type 'customer' or 'admin'
@@ -1472,33 +1512,35 @@
 
 
             if (type === 'customer') {
+                // For customer template, still send order_items array for Mustache.js loop
                 return {
                     customer_name: customerName,
                     customer_email: customerEmail,
                     customer_notes: customerNotes,
-                    order_items: orderDetailsCleaned, // Send raw array of objects
-                    order_date: orderDate, // Pass order date
-                    // Include totals for customer if desired in template
+                    order_items: orderDetailsCleaned, 
+                    order_date: orderDate, 
                     total_nonglow: totals.total_nonglow,
                     total_glow: totals.total_glow,
                     total_envelope: totals.total_envelope,
-                    raw_notes: customerNotes ? customerNotes : '' // Provide raw notes for conditional rendering
+                    raw_notes: customerNotes ? customerNotes : '' 
                 };
             } else if (type === 'admin') {
+                // For admin template, generate the HTML table here
+                const orderDetailsTableHtml = generateAdminOrderTableHtml(orderDetailsCleaned);
+
                 return {
                     customer_name: customerName,
                     customer_email: customerEmail,
                     customer_notes: customerNotes,
                     order_id: orderId,
-                    order_items: orderDetailsCleaned, // Send raw array of objects
-                    order_date: orderDate, // Pass order date
+                    order_date: orderDate, 
                     admin_email: ADMIN_PROOF_EMAIL,
-                    zip_download_url: zipDownloadUrl, // NEW: Pass the ZIP download URL
-                     // Include totals for admin if desired in template
+                    zip_download_url: zipDownloadUrl, 
                     total_nonglow: totals.total_nonglow,
                     total_glow: totals.total_glow,
                     total_envelope: totals.total_envelope,
-                    raw_notes: customerNotes ? customerNotes : '' // Provide raw notes for conditional rendering
+                    raw_notes: customerNotes ? customerNotes : '',
+                    order_details_table_html: orderDetailsTableHtml // NEW: Pass the pre-rendered HTML table
                 };
             }
             return {};
