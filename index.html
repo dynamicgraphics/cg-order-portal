@@ -531,7 +531,7 @@
             apiKey: "AIzaSyBdp15BtxFu-VPkuOdkiX1WyXgAMLrj124",
             authDomain: "cg-portal-backend.firebaseapp.com",
             projectId: "cg-portal-backend",
-            storageBucket: "cg-portal-backend.appspot.com", // CORRECTED THIS LINE
+            storageBucket: "cg-portal-backend.firebasestorage.app", // REVERTED TO THIS VALUE
             messagingSenderId: "543604960285",
             appId: "1:543604960285:web:03b481d610a5eb2fdcaaf4",
         };
@@ -603,7 +603,7 @@
 
         // New elements for mobile order history toggle
         const floatingOrderHistoryBtn = document.getElementById('floatingOrderHistoryBtn');
-        const orderHistoryModal = document.getElementById('orderHistoryModal');
+        const orderHistoryModal = document = document.getElementById('orderHistoryModal');
         const orderHistoryModalCloseBtn = document.getElementById('orderHistoryModalCloseBtn');
 
         // New elements for Proofing System
