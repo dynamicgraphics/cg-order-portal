@@ -1243,7 +1243,7 @@
         customFileUploadInput.value = '';
     }
 
-    function generateProofAndShowModal() {
+    async function generateProofAndShowModal() {
         const customerName = customerNameInput.value.trim();
         const customerEmail = customerEmailInput.value.trim();
         const customerNotes = customerNotesInput.value.trim();
@@ -1286,53 +1286,85 @@
     }
 
     function generateAdminOrderTableHtml(orderItems) {
-    let tableRowsHtml = '';
-    orderItems.forEach(item => {
-        const quantityDisplay = (item.sku === ENVELOPE_SKU) ? `${item.quantity} (in 1,000s)` : item.quantity;
-        const packingDetailsDisplay = item.packing_details ? `<br><span style="font-size: 0.75em; color: #666;">Packing: ${item.packing_details}</span>` : '';
+        let tableRowsHtml = '';
+        orderItems.forEach(item => {
+            const safeTitle = item.title ? item.title.replace(/[<>"'&]/g, match => ({
+                '<': '&lt;',
+                '>': '&gt;',
+                '"': '&quot;',
+                "'": '&#39;',
+                '&': '&amp;'
+            })[match]) : 'Untitled';
+            const safeSku = item.sku ? item.sku.replace(/[<>"'&]/g, match => ({
+                '<': '&lt;',
+                '>': '&gt;',
+                '"': '&quot;',
+                "'": '&#39;',
+                '&': '&amp;'
+            })[match]) : 'Unknown SKU';
+            const safeImageUrl = item.imageUrl && item.imageUrl.startsWith('http') ? item.imageUrl : 'https://placehold.co/60x60/CCCCCC/000000?text=No+Image';
+            const quantityDisplay = (item.sku === ENVELOPE_SKU) ? `${item.quantity} (in 1,000s)` : item.quantity;
+            const packingDetailsDisplay = item.packing_details ? `<br><span style="font-size: 12px; color: #666666;">Packing: ${item.packing_details.replace(/[<>"'&]/g, match => ({
+                '<': '&lt;',
+                '>': '&gt;',
+                '"': '&quot;',
+                "'": '&#39;',
+                '&': '&amp;'
+            })[match])}</span>` : '';
 
-        tableRowsHtml += `
-            <tr style="vertical-align: top;">
-                <td style="padding: 8px; border: 1px solid #ddd; text-align: center;">
-                    <img src="${item.imageUrl}" alt="${item.title}" style="max-width: 60px; max-height: 60px; object-fit: contain; border-radius: 4px; border: 1px solid #e2e8f0; box-shadow: 0 1px 2px rgba(0,0,0,0.1); display: block; margin: 0 auto;" onerror="this.onerror=null;this.src='https://placehold.co/60x60/CCCCCC/000000?text=No+Image';">
-                </td>
-                <td style="padding: 8px; border: 1px solid #ddd;">${item.sku}</td>
-                <td style="padding: 8px; border: 1px solid #ddd;">${item.title}${packingDetailsDisplay}</td>
-                <td style="padding: 8px; border: 1px solid #ddd; text-align: right;">${quantityDisplay}</td>
-            </tr>
-        `;
-    });
-    return `
-        <table style="width: 100%; border-collapse: collapse; border: 1px solid #ddd; margin-top: 15px;">
-            <thead>
-                <tr style="background-color: #f2f2f2;">
-                    <th style="padding: 8px; border: 1px solid #ddd; text-align: center; width: 100px;">Image</th>
-                    <th style="padding: 8px; border: 1px solid #ddd; text-align: left;">SKU</th>
-                    <th style="padding: 8px; border: 1px solid #ddd; text-align: left;">Item</th>
-                    <th style="padding: 8px; border: 1px solid #ddd; text-align: right; width: 80px;">Quantity</th>
+            tableRowsHtml += `
+                <tr style="vertical-align: top;">
+                    <td style="padding: 8px; border: 1px solid #dddddd; text-align: center;">
+                        <img src="${safeImageUrl}" alt="${safeTitle}" style="width: 60px; height: 60px; object-fit: contain; border: 1px solid #e2e8f0;" onerror="this.src='https://placehold.co/60x60/CCCCCC/000000?text=No+Image';">
+                    </td>
+                    <td style="padding: 8px; border: 1px solid #dddddd; font-size: 14px; color: #333333;">${safeSku}</td>
+                    <td style="padding: 8px; border: 1px solid #dddddd; font-size: 14px; color: #333333;">${safeTitle}${packingDetailsDisplay}</td>
+                    <td style="padding: 8px; border: 1px solid #dddddd; text-align: right; font-size: 14px; color: #333333;">${quantityDisplay}</td>
                 </tr>
-            </thead>
-            <tbody>
-                ${tableRowsHtml}
-            </tbody>
-        </table>
-    `;
-}
+            `;
+        });
+        return `
+            <table style="width: 100%; border-collapse: collapse; border: 1px solid #dddddd; font-family: Arial, sans-serif; margin-top: 15px;">
+                <thead>
+                    <tr style="background-color: #f2f2f2;">
+                        <th style="padding: 8px; border: 1px solid #dddddd; text-align: center; font-size: 14px; color: #333333; width: 100px;">Image</th>
+                        <th style="padding: 8px; border: 1px solid #dddddd; text-align: left; font-size: 14px; color: #333333;">SKU</th>
+                        <th style="padding: 8px; border: 1px solid #dddddd; text-align: left; font-size: 14px; color: #333333;">Item</th>
+                        <th style="padding: 8px; border: 1px solid #dddddd; text-align: right; font-size: 14px; color: #333333; width: 80px;">Quantity</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    ${tableRowsHtml}
+                </tbody>
+            </table>
+        `;
+    }
 
     function generateTemplateParams(type, orderId = 'N/A') {
-        const customerName = customerNameInput.value.trim();
-        const customerEmail = customerEmailInput.value.trim();
-        const customerNotes = customerNotesInput.value.trim();
-        const orderDate = new Date().toLocaleString();
+        const escapeHtml = (str) => {
+            if (!str) return '';
+            return str.replace(/[<>"'&]/g, match => ({
+                '<': '&lt;',
+                '>': '&gt;',
+                '"': '&quot;',
+                "'": '&#39;',
+                '&': '&amp;'
+            })[match]);
+        };
+
+        const customerName = escapeHtml(customerNameInput.value.trim());
+        const customerEmail = escapeHtml(customerEmailInput.value.trim());
+        const customerNotes = escapeHtml(customerNotesInput.value.trim());
+        const orderDate = escapeHtml(new Date().toLocaleString());
 
         const orderDetailsCleaned = currentOrder.map(item => ({
-            id: item.id || '',
-            title: item.title || '',
-            sku: item.sku || '',
+            id: escapeHtml(item.id || ''),
+            title: escapeHtml(item.title || ''),
+            sku: escapeHtml(item.sku || ''),
             quantity: item.quantity || 0,
-            imageUrl: item.imageUrl || 'https://placehold.co/64x64/CCCCCC/000000?text=No+Image',
+            imageUrl: item.imageUrl && item.imageUrl.startsWith('http') ? item.imageUrl : 'https://placehold.co/64x64/CCCCCC/000000?text=No+Image',
             quantity_display: (item.sku === ENVELOPE_SKU) ? `${item.quantity} (in 1,000s)` : `${item.quantity}`,
-            packing_details: item.packing_details || ''
+            packing_details: escapeHtml(item.packing_details || '')
         }));
 
         let totalQuantityNonGlow = 0;
@@ -1367,19 +1399,30 @@
                 raw_notes: customerNotes ? customerNotes : ''
             };
         } else if (type === 'admin') {
-            const orderDetailsTableHtml = generateAdminOrderTableHtml(orderDetailsCleaned);
+            // Sort orderDetailsCleaned by id in natural numerical/alphabetical order
+            const sortedOrderDetails = [...orderDetailsCleaned].sort((a, b) => {
+                const idA = a.id.toLowerCase();
+                const idB = b.id.toLowerCase();
+                return idA.localeCompare(idB, undefined, { numeric: true, sensitivity: 'base' });
+            });
+
+            // Generate plain-text order details using sorted items
+            const orderDetailsText = sortedOrderDetails.map(item => 
+                `SKU: ${item.sku}\nItem: ${item.title}\nQuantity: ${item.quantity_display}${item.packing_details ? `\nPacking: ${item.packing_details}` : ''}\nImage: ${item.imageUrl}`
+            ).join('\n\n');
+            
             return {
                 customer_name: customerName,
                 customer_email: customerEmail,
                 customer_notes: customerNotes,
-                order_id: orderId,
+                order_id: escapeHtml(orderId),
                 order_date: orderDate,
-                admin_email: ADMIN_PROOF_EMAIL,
+                admin_email: escapeHtml(ADMIN_PROOF_EMAIL),
                 total_nonglow: totals.total_nonglow,
                 total_glow: totals.total_glow,
                 total_envelope: totals.total_envelope,
                 raw_notes: customerNotes ? customerNotes : '',
-                order_details_table_html: orderDetailsTableHtml
+                order_details_text: orderDetailsText
             };
         }
         return {};
@@ -1467,8 +1510,8 @@
             const customerTemplateParams = generateTemplateParams('customer', orderId);
             const adminTemplateParams = generateTemplateParams('admin', orderId);
 
-            console.log('Customer email params:', customerTemplateParams);
-            console.log('Admin email params:', adminTemplateParams);
+            console.log('Customer email params:', JSON.stringify(customerTemplateParams, null, 2));
+            console.log('Admin email params:', JSON.stringify(adminTemplateParams, null, 2));
 
             let customerEmailSuccess = false;
             let adminEmailSuccess = false;
