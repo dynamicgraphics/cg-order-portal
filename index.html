@@ -458,7 +458,7 @@
                 </div>
 
                 <div class="flex flex-col sm:flex-row justify-center gap-4">
-                    <button id="generateProofBtn"
+                    <button id="ProofBtn"
                             class="w-full sm:w-1/2 px-6 py-4 bg-indigo-600 text-white rounded-lg font-bold text-xl hover:bg-indigo-700 transition duration-200 shadow-lg">
                         Confirm Order & Review
                     </button>
@@ -590,7 +590,7 @@
     const orderHistoryModal = document.getElementById('orderHistoryModal');
     const orderHistoryModalCloseBtn = document.getElementById('orderHistoryModalCloseBtn');
 
-    const generateProofBtn = document.getElementById('generateProofBtn');
+    const ProofBtn = document.getElementById('ProofBtn');
     const proofModal = document.getElementById('proofModal');
     const closeProofModal = document.getElementById('closeProofModal');
     const proofContent = document.getElementById('proofContent');
@@ -929,7 +929,7 @@
             }
         });
 
-        generateProofBtn.addEventListener('click', generateProofAndShowModal);
+        ProofBtn.addEventListener('click', ProofAndShowModal);
         closeProofModal.addEventListener('click', () => proofModal.classList.add('hidden'));
         approveProofBtn.addEventListener('click', handleSubmitOrder);
         reviseOrderBtn.addEventListener('click', () => proofModal.classList.add('hidden'));
@@ -1243,7 +1243,7 @@
         customFileUploadInput.value = '';
     }
 
-    async function generateProofAndShowModal() {
+    async function ProofAndShowModal() {
         const customerName = customerNameInput.value.trim();
         const customerEmail = customerEmailInput.value.trim();
         const customerNotes = customerNotesInput.value.trim();
@@ -1285,7 +1285,7 @@
         proofModal.classList.remove('hidden');
     }
 
-    function generateAdminOrderTableHtml(orderItems) {
+    function AdminOrderTableHtml(orderItems) {
         let tableRowsHtml = '';
         orderItems.forEach(item => {
             const safeTitle = item.title ? item.title.replace(/[<>"'&]/g, match => ({
@@ -1340,93 +1340,88 @@
         `;
     }
 
-    function generateTemplateParams(type, orderId = 'N/A') {
-        const escapeHtml = (str) => {
-            if (!str) return '';
-            return str.replace(/[<>"'&]/g, match => ({
-                '<': '&lt;',
-                '>': '&gt;',
-                '"': '&quot;',
-                "'": '&#39;',
-                '&': '&amp;'
-            })[match]);
-        };
+  function generateTemplateParams(type, orderId = 'N/A') {
+ const escapeHtml = (str) => {
+ if (!str) return '';
+ return str.replace(/[<>"'&]/g, match => ({
+ '<': '&lt;',
+ '>': '&gt;',
+ '"': '&quot;',
+ "'": '&#39;',
+ '&': '&amp;'
+ })[match]);
+ };
 
-        const customerName = escapeHtml(customerNameInput.value.trim());
-        const customerEmail = escapeHtml(customerEmailInput.value.trim());
-        const customerNotes = escapeHtml(customerNotesInput.value.trim());
-        const orderDate = escapeHtml(new Date().toLocaleString());
+ const customerName = escapeHtml(customerNameInput.value.trim());
+ const customerEmail = escapeHtml(customerEmailInput.value.trim());
+ const rawNotes = escapeHtml(customerNotesInput.value.trim());
+ const orderDate = escapeHtml(new Date().toLocaleString());
 
-        const orderDetailsCleaned = currentOrder.map(item => ({
-            id: escapeHtml(item.id || ''),
-            title: escapeHtml(item.title || ''),
-            sku: escapeHtml(item.sku || ''),
-            quantity: item.quantity || 0,
-            imageUrl: item.imageUrl && item.imageUrl.startsWith('http') ? item.imageUrl : 'https://placehold.co/64x64/CCCCCC/000000?text=No+Image',
-            quantity_display: (item.sku === ENVELOPE_SKU) ? `${item.quantity} (in 1,000s)` : `${item.quantity}`,
-            packing_details: escapeHtml(item.packing_details || '')
-        }));
+ const orderDetailsCleaned = currentOrder.map(item => ({
+ id: escapeHtml(item.id || ''),
+ title: escapeHtml(item.title || ''),
+ sku: escapeHtml(item.sku || ''),
+ quantity: item.quantity || 0,
+ imageUrl: item.imageUrl && item.imageUrl.startsWith('http') ? item.imageUrl : 'https://placehold.co/40x40/CCCCCC/000000?text=No+Image',
+ quantity_display: (item.sku === ENVELOPE_SKU) ? `${item.quantity} (in 1,000s)` : `${item.quantity}`,
+ packing_details: escapeHtml(item.packing_details || '')
+ }));
 
-        let totalQuantityNonGlow = 0;
-        let totalQuantityGlow = 0;
-        let totalQuantityEnvelope = 0;
-        currentOrder.forEach(item => {
-            if (item.sku === ENVELOPE_SKU) {
-                totalQuantityEnvelope += item.quantity;
-            } else if (item.title.toLowerCase().includes('glow in the dark') || item.sku.toLowerCase().includes('glow in the dark') || item.sku.toLowerCase().includes('gitd')) {
-                totalQuantityGlow += item.quantity;
-            } else {
-                totalQuantityNonGlow += item.quantity;
-            }
-        });
+ let totalQuantityNonGlow = 0;
+ let totalQuantityGlow = 0;
+ let totalQuantityEnvelope = 0;
+ currentOrder.forEach(item => {
+ if (item.sku === ENVELOPE_SKU) {
+ totalQuantityEnvelope += item.quantity;
+ } else if (item.title.toLowerCase().includes('glow in the dark') || item.sku.toLowerCase().includes('glow in the dark') || item.sku.toLowerCase().includes('gitd')) {
+ totalQuantityGlow += item.quantity;
+ } else {
+ totalQuantityNonGlow += item.quantity;
+ }
+ });
 
-        const totals = {
-            total_nonglow: new Intl.NumberFormat('en-US').format(totalQuantityNonGlow),
-            total_glow: new Intl.NumberFormat('en-US').format(totalQuantityGlow),
-            total_envelope: new Intl.NumberFormat('en-US').format(totalQuantityEnvelope * 1000)
-        };
+ const totals = {
+ total_nonglow: new Intl.NumberFormat('en-US').format(totalQuantityNonGlow),
+ total_glow: new Intl.NumberFormat('en-US').format(totalQuantityGlow),
+ total_envelope: new Intl.NumberFormat('en-US').format(totalQuantityEnvelope * 1000)
+ };
 
-        if (type === 'customer') {
-            return {
-                customer_name: customerName,
-                customer_email: customerEmail,
-                customer_notes: customerNotes,
-                order_items: orderDetailsCleaned,
-                order_date: orderDate,
-                total_nonglow: totals.total_nonglow,
-                total_glow: totals.total_glow,
-                total_envelope: totals.total_envelope,
-                raw_notes: customerNotes ? customerNotes : ''
-            };
-        } else if (type === 'admin') {
-            // Sort orderDetailsCleaned by id in natural numerical/alphabetical order
-            const sortedOrderDetails = [...orderDetailsCleaned].sort((a, b) => {
-                const idA = a.id.toLowerCase();
-                const idB = b.id.toLowerCase();
-                return idA.localeCompare(idB, undefined, { numeric: true, sensitivity: 'base' });
-            });
+ if (type === 'customer') {
+ return {
+ customer_name: customerName,
+ customer_email: customerEmail,
+ order_items: orderDetailsCleaned,
+ date: orderDate,
+ total_nonglow: totals.total_nonglow,
+ total_glow: totals.total_glow,
+ total_envelope: totals.total_envelope,
+ raw_notes: rawNotes
+ };
+ } else if (type === 'admin') {
+ // Sort orderDetailsCleaned by id in natural numerical/alphabetical order
+ const sortedOrderDetails = [...orderDetailsCleaned].sort((a, b) => {
+ const idA = a.id.toLowerCase();
+ const idB = b.id.toLowerCase();
+ return idA.localeCompare(idB, undefined, { numeric: true, sensitivity: 'base' });
+ });
 
-            // Generate plain-text order details using sorted items
-            const orderDetailsText = sortedOrderDetails.map(item => 
-                `SKU: ${item.sku}\nItem: ${item.title}\nQuantity: ${item.quantity_display}${item.packing_details ? `\nPacking: ${item.packing_details}` : ''}\nImage: ${item.imageUrl}`
-            ).join('\n\n');
-            
-            return {
-                customer_name: customerName,
-                customer_email: customerEmail,
-                customer_notes: customerNotes,
-                order_id: escapeHtml(orderId),
-                order_date: orderDate,
-                admin_email: escapeHtml(ADMIN_PROOF_EMAIL),
-                total_nonglow: totals.total_nonglow,
-                total_glow: totals.total_glow,
-                total_envelope: totals.total_envelope,
-                raw_notes: customerNotes ? customerNotes : '',
-                order_details_text: orderDetailsText
-            };
-        }
-        return {};
-    }
+ // Generate HTML table with sorted items
+ const orderDetailsTableHtml = generateAdminOrderTableHtml(sortedOrderDetails);
+
+ return {
+ customer_name: customerName,
+ customer_email: customerEmail,
+ order_id: escapeHtml(orderId),
+ date: orderDate,
+ total_nonglow: totals.total_nonglow,
+ total_glow: totals.total_glow,
+ total_envelope: totals.total_envelope,
+ raw_notes: rawNotes,
+ order_details_table_html: orderDetailsTableHtml
+ };
+ }
+ return {};
+}
 
     async function sendEmailWithRetry(serviceId, templateId, params, userId, maxRetries = 3, delayMs = 1000) {
         for (let attempt = 1; attempt <= maxRetries; attempt++) {
