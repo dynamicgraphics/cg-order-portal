@@ -515,1300 +515,1116 @@
     </div>
 
     <!-- Firebase SDKs -->
-    <script type="module">
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-        import { getAuth, onAuthStateChanged, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-        import { getFirestore, collection, addDoc, query, onSnapshot, serverTimestamp, doc, getDoc, setDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
-        import { getStorage, ref, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-storage.js";
+   <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+    import { getAuth, onAuthStateChanged, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+    import { getFirestore, collection, addDoc, query, onSnapshot, serverTimestamp, doc, getDoc, setDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+    import { getStorage, ref, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-storage.js";
 
+    // --- GLOBAL FIREBASE VARIABLES ---
+    const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
 
-        // --- GLOBAL FIREBASE VARIABLES (Provided by Canvas Environment) ---
-        // The appId is provided by the Canvas environment.
-        const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
+    const firebaseConfig = {
+        apiKey: "AIzaSyBdp15BtxFu-VPkuOdkiX1WyXgAMLrj124",
+        authDomain: "cg-portal-backend.firebaseapp.com",
+        projectId: "cg-portal-backend",
+        storageBucket: "cg-portal-backend.firebasestorage.app",
+        messagingSenderId: "543604960285",
+        appId: "1:543604960285:web:03b481d610a5eb2fdcaaf4",
+    };
 
-        // Your web app's Firebase configuration (hardcoded as provided by user)
-        const firebaseConfig = {
-            apiKey: "AIzaSyBdp15BtxFu-VPkuOdkiX1WyXgAMLrj124",
-            authDomain: "cg-portal-backend.firebaseapp.com",
-            projectId: "cg-portal-backend",
-            storageBucket: "cg-portal-backend.firebasestorage.app", 
-            messagingSenderId: "543604960285",
-            appId: "1:543604960285:web:03b481d610a5eb2fdcaaf4",
-        };
+    // --- CONFIGURATION ---
+    const EMAILJS_SERVICE_ID = 'service_6r03vij';
+    const EMAILJS_TEMPLATE_ID_CUSTOMER = 'template_0kb0906';
+    const EMAILJS_TEMPLATE_ID_ADMIN = 'template_zal2biw';
+    const EMAILJS_USER_ID = 'LWqR9FL0EyxzFU7jm';
+    const GOOGLE_SHEET_CSV_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vRJeafxZBqtfXhW91V849PmPbr1C0ExZmnvfQ_410tdo4PPDvXNPHC44VrBEd3G7nRpPulT-XC6R79X/pub?gid=1341072506&single=true&output=csv';
+    const ENVELOPE_SKU = 'CG-SE1';
+    const ADMIN_PROOF_EMAIL = 'admin@example.com'; // Replace with actual admin email
 
+    // --- GLOBAL VARIABLES & CACHED ELEMENTS ---
+    let currentOrder = [];
+    let productCatalog = [];
 
-        // --- CONFIGURATION ---
-        // IMPORTANT: Replace with your actual Cloud Function URL after deployment!
-       // const ZIP_CLOUD_FUNCTION_URL = 'https://us-central1-cg-portal-backend.cloudfunctions.net/zipAndProvideDownload'; 
-        
-        // EmailJS Configuration - REPLACE THESE WITH YOUR ACTUAL EMAILJS CREDENTIALS
-        const EMAILJS_SERVICE_ID = 'service_6r03vij'; 
-        const EMAILJS_TEMPLATE_ID_CUSTOMER = 'template_zal2biw'; // This template is now for admin only, or a generic customer template
-        const EMAILJS_TEMPLATE_ID_CUSTOMER_RECAP = 'template_0kb0906'; // NEW: Dedicated template for customer recap
-        const EMAILJS_TEMPLATE_ID_ADMIN = 'template_zal2biw'; // Assuming this template is used for admin
-        const EMAILJS_USER_ID = 'LWqR9FL0EyxzFU7jm'; 
+    const searchInput = document.getElementById('partSearch');
+    const searchButton = document.getElementById('searchButton');
+    const searchResultsDiv = document.getElementById('searchResults');
+    const noResultsDiv = document.getElementById('noResults');
+    const loadingIndicator = document.getElementById('loadingIndicator');
+    const orderListDiv = document.getElementById('orderList');
+    const emptyOrderMessage = document.getElementById('emptyOrderMessage');
+    const customerNameInput = document.getElementById('customerName');
+    const customerEmailInput = document.getElementById('customerEmail');
+    const customerNotesInput = document.getElementById('customerNotes');
+    const submitOrderButton = document.getElementById('submitOrder');
+    const messageBox = document.getElementById('messageBox');
+    const messageText = document.getElementById('messageText');
+    const closeMessageBoxButton = document.getElementById('closeMessageBox');
 
-        // This URL should be obtained by "Publish to web" as CSV from your Google Sheet.
-        const GOOGLE_SHEET_CSV_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vRJeafxZBqtfXhW91V849PmPbr1C0ExZmnvfQ_410tdo4PPDvXNPHC44VrBEd3G7nRpPulT-XC6R79X/pub?gid=1341072506&single=true&output=csv'; 
-        const ENVELOPE_SKU = 'CG-SE1';
-        const ADMIN_PROOF_EMAIL = 'admin@example.com'; // IMPORTANT: Replace with your actual admin email for receiving proofs
+    const authOverlay = document.getElementById('authOverlay');
+    const authTitle = document.getElementById('authTitle');
+    const authNameInput = document.getElementById('authName');
+    const authEmailInput = document.getElementById('authEmail');
+    const authPasswordInput = document.getElementById('authPassword');
+    const authSubmitButton = document.getElementById('authSubmit');
+    const authError = document.getElementById('authError');
+    const toggleAuthMode = document.getElementById('toggleAuthMode');
+    const toggleAuthModeText = document.getElementById('toggleAuthModeText');
+    const mainContainer = document.querySelector('.container');
 
-        // --- GLOBAL VARIABLES & CACHED ELEMENTS ---
-        let currentOrder = []; // Stores items added to the order
-        let productCatalog = []; // Will store the product data fetched from the Google Sheet
-        
-        const searchInput = document.getElementById('partSearch');
-        const searchButton = document.getElementById('searchButton');
-        const searchResultsDiv = document.getElementById('searchResults');
-        const noResultsDiv = document.getElementById('noResults');
-        const loadingIndicator = document.getElementById('loadingIndicator');
-        const orderListDiv = document.getElementById('orderList');
-        const emptyOrderMessage = document.getElementById('emptyOrderMessage');
-        const customerNameInput = document.getElementById('customerName');
-        const customerEmailInput = document.getElementById('customerEmail');
-        const customerNotesInput = document.getElementById('customerNotes');
-        const submitOrderButton = document.getElementById('submitOrder');
-        const messageBox = document.getElementById('messageBox');
-        const messageText = document.getElementById('messageText'); 
-        const closeMessageBoxButton = document.getElementById('closeMessageBox');
+    const orderTotalsSummaryDiv = document.getElementById('orderTotalsSummary');
+    const totalNonGlowSpan = document.getElementById('totalNonGlow');
+    const totalGlowSpan = document.getElementById('totalGlow');
+    const totalEnvelopeSpan = document.getElementById('totalEnvelope');
 
-        // Authentication related elements
-        const authOverlay = document.getElementById('authOverlay');
-        const authTitle = document.getElementById('authTitle');
-        const authNameInput = document.getElementById('authName'); // New: Name input
-        const authEmailInput = document.getElementById('authEmail');
-        const authPasswordInput = document.getElementById('authPassword');
-        const authSubmitButton = document.getElementById('authSubmit'); // Corrected this line
-        const authError = document.getElementById('authError');
-        const toggleAuthMode = document.getElementById('toggleAuthMode');
-        const toggleAuthModeText = document.getElementById('toggleAuthModeText');
-        const mainContainer = document.querySelector('.container'); // Get the main container
+    const userIdDisplay = document.getElementById('userIdDisplay');
+    const currentUserNameSpan = document.getElementById('currentUserName');
+    const logoutButton = document.getElementById('logoutButton');
 
-        // Order Totals Summary Elements
-        const orderTotalsSummaryDiv = document.getElementById('orderTotalsSummary');
-        const totalNonGlowSpan = document.getElementById('totalNonGlow');
-        const totalGlowSpan = document.getElementById('totalGlow');
-        const totalEnvelopeSpan = document.getElementById('totalEnvelope');
+    const orderHistoryListDesktop = document.getElementById('orderHistoryListDesktop');
+    const emptyOrderHistoryMessageDesktop = document.getElementById('emptyOrderHistoryMessageDesktop');
+    const orderHistoryListMobile = document.getElementById('orderHistoryListMobile');
+    const emptyOrderHistoryMessageMobile = document.getElementById('emptyOrderHistoryMessageMobile');
 
-        // Elements for Order History and User ID
-        const userIdDisplay = document.getElementById('userIdDisplay');
-        const currentUserNameSpan = document.getElementById('currentUserName'); 
-        const logoutButton = document.getElementById('logoutButton');
-        
-        // Updated references for order history lists
-        const orderHistoryListDesktop = document.getElementById('orderHistoryListDesktop');
-        const emptyOrderHistoryMessageDesktop = document.getElementById('emptyOrderHistoryMessageDesktop');
-        const orderHistoryListMobile = document.getElementById('orderHistoryListMobile');
-        const emptyOrderHistoryMessageMobile = document.getElementById('emptyOrderHistoryMessageMobile');
+    const floatingOrderHistoryBtn = document.getElementById('floatingOrderHistoryBtn');
+    const orderHistoryModal = document.getElementById('orderHistoryModal');
+    const orderHistoryModalCloseBtn = document.getElementById('orderHistoryModalCloseBtn');
 
-        // New elements for mobile order history toggle
-        const floatingOrderHistoryBtn = document.getElementById('floatingOrderHistoryBtn');
-        const orderHistoryModal = document.getElementById('orderHistoryModal'); 
-        const orderHistoryModalCloseBtn = document.getElementById('orderHistoryModalCloseBtn');
+    const generateProofBtn = document.getElementById('generateProofBtn');
+    const proofModal = document.getElementById('proofModal');
+    const closeProofModal = document.getElementById('closeProofModal');
+    const proofContent = document.getElementById('proofContent');
+    const approveProofBtn = document.getElementById('approveProofBtn');
+    const reviseOrderBtn = document.getElementById('reviseOrderBtn');
 
-        // New elements for Proofing System
-        const generateProofBtn = document.getElementById('generateProofBtn');
-        const proofModal = document.getElementById('proofModal');
-        const closeProofModal = document.getElementById('closeProofModal');
-        const proofContent = document.getElementById('proofContent');
-        const approveProofBtn = document.getElementById('approveProofBtn');
-        const reviseOrderBtn = document.getElementById('reviseOrderBtn');
+    const customFileUploadInput = document.getElementById('customFileUpload');
+    const uploadCustomFileBtn = document.getElementById('uploadCustomFileBtn');
+    const customUploadList = document.getElementById('customUploadList');
 
-        // New elements for Custom Uploads
-        const customFileUploadInput = document.getElementById('customFileUpload');
-        const uploadCustomFileBtn = document.getElementById('uploadCustomFileBtn');
-        const customUploadList = document.getElementById('customUploadList');
+    let isLoginMode = true;
+    let app, db, auth, storage;
+    let currentUserId = null;
+    let currentUserEmail = null;
+    let currentUserName = null;
 
+    // --- UTILITY FUNCTIONS ---
 
-        let isLoginMode = true; // State for login/signup toggle
-
-        let app, db, auth, storage; // Added storage
-        let currentUserId = null; // To store the authenticated user's UID
-        let currentUserEmail = null; // To store the authenticated user's email
-        let currentUserName = null; // To store the authenticated user's name
-
-
-        // --- UTILITY FUNCTIONS ---
-
-        /**
-         * Parses CSV text into an array of objects, robustly handling commas within fields.
-         * Assumes the first row is the header.
-         * @param {string} csvText The CSV data as a string.
-         * @returns {Array<object>} An array of objects, where each object represents a row.
-         */
-        function parseCSV(csvText) {
-            console.log('Parsing CSV Text (raw):', csvText); // Log the raw CSV text
-            const lines = csvText.trim().split(/\r?\n/); // Split by new line, handling both \n and \r\n
-            if (lines.length === 0) {
-                console.warn('No lines found in CSV text.');
-                return [];
-            }
-
-            console.log('Raw CSV Header Line:', lines[0]); // Log the exact first line
-
-            // Regex to split by comma, ignoring commas within double quotes
-            const csvSplitRegex = /,(?=(?:(?:[^"]*"){2})*[^"]*$)/;
-
-            // Extract headers and trim/remove quotes
-            const rawHeaders = lines[0].split(csvSplitRegex);
-            console.log('Headers after initial split (raw values):', rawHeaders);
-
-            // Filter out any empty strings from the headers array
-            const headers = rawHeaders.map(header => header.trim().replace(/^"|"$/g, '')).filter(header => header !== '');
-            console.log('Final Parsed Headers (after trim, quote removal, and empty filter):', headers);
-
-            // Check for empty headers (this check is now more robust due to filtering above)
-            if (headers.length === 0) {
-                console.error('ERROR: No valid headers found after parsing. Please check your Google Sheet CSV headers.');
-                showMessageBox('Error: Product catalog headers are malformed or missing. Please check your Google Sheet CSV headers.');
-                return []; // Return empty array if no valid headers
-            }
-
-            const data = [];
-
-            for (let i = 1; i < lines.length; i++) {
-                const line = lines[i].trim();
-                if (line === '') {
-                    console.log(`Skipping empty line ${i + 1}.`);
-                    continue; // Skip empty lines
-                }
-
-                const values = line.split(csvSplitRegex).map(value => value.trim().replace(/^"|"$/g, '')); // Remove quotes from values
-
-                // MODIFIED: If more values than headers, truncate values array to match headers length
-                if (values.length > headers.length) {
-                    console.warn(`Skipping row ${i + 1} due to column mismatch. Expected ${headers.length} columns, got ${values.length}. Truncating. Row: "${line}"`);
-                    values.length = headers.length; // Truncate the array to match the number of headers
-                } else if (values.length < headers.length) {
-                    // If fewer values than headers, this is still an issue, so skip the row
-                    console.warn(`Skipping row ${i + 1} due to column mismatch. Expected ${headers.length} columns, got ${values.length}. Row: "${line}"`);
-                    continue;
-                }
-
-                const rowObject = {};
-                headers.forEach((header, index) => {
-                    // Special handling for searchTerms: convert to array
-                    // Now splits by comma, assuming searchTerms in CSV are comma-separated
-                    if (header === 'searchTerms') {
-                        rowObject[header] = values[index].split(',').map(term => term.trim().toLowerCase()).filter(term => term !== ''); 
-                    } else {
-                        rowObject[header] = values[index];
-                    }
-                });
-                data.push(rowObject);
-            }
-            console.log('Parsed Data (productCatalog before envelope):', data);
-            return data;
+    function parseCSV(csvText) {
+        console.log('Parsing CSV Text (raw):', csvText);
+        const lines = csvText.trim().split(/\r?\n/);
+        if (lines.length === 0) {
+            console.warn('No lines found in CSV text.');
+            return [];
         }
 
+        console.log('Raw CSV Header Line:', lines[0]);
+        const csvSplitRegex = /,(?=(?:(?:[^"]*"){2})*[^"]*$)/;
+        const rawHeaders = lines[0].split(csvSplitRegex);
+        console.log('Headers after initial split (raw values):', rawHeaders);
 
-        /**
-         * Fetches product data from the Google Sheet CSV URL and adds hardcoded envelope.
-         */
-        async function fetchProductCatalog() {
-            try {
-                loadingIndicator.textContent = 'Loading product catalog...';
-                loadingIndicator.classList.remove('hidden');
+        const headers = rawHeaders.map(header => header.trim().replace(/^"|"$/g, '')).filter(header => header !== '');
+        console.log('Final Parsed Headers:', headers);
 
-                console.log('Attempting to fetch product catalog from URL:', GOOGLE_SHEET_CSV_URL); // Log the URL being fetched
+        if (headers.length === 0) {
+            console.error('ERROR: No valid headers found.');
+            showMessageBox('Error: Product catalog headers are malformed or missing.');
+            return [];
+        }
 
-                const response = await fetch(GOOGLE_SHEET_CSV_URL);
-                if (!response.ok) {
-                    throw new Error(`Failed to fetch product catalog: ${response.statusText}`);
-                }
-                const csvText = await response.text();
-                // NEW LOG: Log the raw CSV text received by the fetch call
-                console.log('Raw CSV Text received by fetch:', csvText.substring(0, 200) + '...'); // Log first 200 chars to avoid huge console output
-                productCatalog = parseCSV(csvText);
-
-                // Add the hardcoded envelope item to the product catalog
-                const envelopeItem = {
-                    id: 'CG-SE1',
-                    title: 'Custom Sticker Envelopes',
-                    sku: 'CG-SE1',
-                    imageUrl: 'https://storage.googleapis.com/cg-portal-assets/CG-SE1%20White%20Bubble%20Sticker%20Envelope.png', // Ensure this URL is correct and public
-                    searchTerms: ['envelope', 'envelopes', 'cg-se1']
-                };
-                // Check if the envelope item already exists to prevent duplicates on re-fetch
-                if (!productCatalog.some(item => item.id === envelopeItem.id)) {
-                    productCatalog.push(envelopeItem);
-                }
-                
-                console.log('Final Product Catalog (after adding envelope):', productCatalog); // Log the loaded catalog
-                loadingIndicator.classList.add('hidden');
+        const data = [];
+        for (let i = 1; i < lines.length; i++) {
+            const line = lines[i].trim();
+            if (line === '') {
+                console.log(`Skipping empty line ${i + 1}.`);
+                continue;
             }
-            catch (error) {
-                console.error('Error fetching or parsing product catalog:', error);
-                loadingIndicator.classList.add('hidden');
-                showMessageBox('Error loading product catalog. Please try refreshing the page or contact support.');
+
+            const values = line.split(csvSplitRegex).map(value => value.trim().replace(/^"|"$/g, ''));
+            if (values.length > headers.length) {
+                console.warn(`Skipping row ${i + 1} due to column mismatch. Expected ${headers.length}, got ${values.length}. Row: "${line}"`);
+                values.length = headers.length;
+            } else if (values.length < headers.length) {
+                console.warn(`Skipping row ${i + 1} due to column mismatch. Expected ${headers.length}, got ${values.length}. Row: "${line}"`);
+                continue;
             }
-        }
 
-        /**
-         * Displays a custom message box to the user.
-         * @param {string} message The message to display.
-         */
-        function showMessageBox(message) {
-            messageText.textContent = message;
-            messageBox.classList.remove('hidden');
-        }
-
-        /**
-         * Hides the custom message box.
-         */
-        function hideMessageBox() {
-            messageBox.classList.add('hidden');
-        }
-
-        /**
-         * Renders a single product search result item.
-         * @param {object} product The product object from our local catalog.
-         * @returns {string} HTML string for the product card.
-         */
-        function renderProductCard(product) {
-            // Ensure product.id exists before sanitizing
-            const productId = product.id || `unknown-id-${Math.random().toString(36).substring(7)}`;
-            const uniqueId = productId.replace(/[^a-zA-Z0-9-_]/g, ''); // Sanitize for HTML ID
-
-            // Determine initial quantity value based on SKU
-            const initialQuantity = (product.sku === ENVELOPE_SKU) ? 1 : 100; // 1 for envelope (represents 1000), 100 for others
-            const minQuantity = (product.sku === ENVELOPE_SKU) ? 1 : 1; // Minimum of 1 for both
-            const quantityUnit = (product.sku === ENVELOPE_SKU) ? ' (x1000)' : ''; // Add unit for envelope
-
-            return `
-                <div class="w-full sm:w-56 lg:w-64 flex flex-col items-center bg-gray-50 border border-gray-200 rounded-lg p-4 shadow-sm text-center">
-                    <img src="${product.imageUrl}" alt="${product.title}" class="w-20 h-20 object-contain rounded-lg mb-4 flex-shrink-0" onerror="this.onerror=null;this.src='https://placehold.co/100x100/CCCCCC/000000?text=No+Image';">
-                    <div class="flex-grow w-full"> <!-- Use w-full to ensure text takes full width -->
-                        <h3 class="font-bold text-gray-800 break-words">${product.title}</h3>
-                        <p class="text-sm text-gray-600">SKU: ${product.sku}</p>
-                    </div>
-                    <div class="flex flex-col items-center mt-4 w-full gap-2"> <!-- Quantity and Add button -->
-                        <input type="number" value="${initialQuantity}" min="${minQuantity}"
-                               class="w-full p-2 border border-gray-300 rounded-lg text-center quantity-input"
-                               id="qty-${uniqueId}"
-                               data-product-id="${productId}"
-                               data-product-title="${product.title}"
-                               data-product-sku="${product.sku}"
-                               data-product-image="${product.imageUrl}">
-                        <button class="w-full px-3 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition duration-200 add-to-order-btn"
-                                data-product-id="${productId}">
-                            Add${quantityUnit}
-                        </button>
-                    </div>
-                </div>
-            `;
-        }
-
-        /**
-         * Renders the current order list and updates totals.
-         */
-        function renderOrderList() {
-            orderListDiv.innerHTML = ''; // Clear existing list
-            if (currentOrder.length === 0) {
-                emptyOrderMessage.classList.remove('hidden');
-                orderListDiv.appendChild(emptyOrderMessage);
-                orderTotalsSummaryDiv.classList.add('hidden'); // Hide totals if order is empty
-            } else {
-                emptyOrderMessage.classList.add('hidden');
-                currentOrder.forEach(item => {
-                    const quantityDisplay = (item.sku === ENVELOPE_SKU) ? `${item.quantity} (in 1,000s)` : item.quantity;
-                    const packingDetailsDisplay = item.packing_details ? `<br><span class="text-xs text-gray-500">Packing: ${item.packing_details}</span>` : '';
-
-                    const orderItemHtml = `
-                        <div class="flex items-center justify-between p-4 bg-white hover:bg-gray-50 transition duration-150">
-                            <div class="flex items-center">
-                                <img src="${item.imageUrl}" alt="${item.title}" class="w-16 h-16 object-contain rounded-lg mr-4" onerror="this.onerror=null;this.src='https://placehold.co/64x64/CCCCCC/000000?text=No+Image';">
-                                <div class="min-w-0">
-                                    <h4 class="font-semibold text-gray-800 break-words w-full">${item.title}</h4>
-                                    <p class="text-sm text-gray-600">SKU: ${item.sku} - Qty: ${quantityDisplay}${packingDetailsDisplay}</p>
-                                </div>
-                            </div>
-                            <button class="px-3 py-1 bg-red-500 text-white rounded-lg hover:bg-red-600 transition duration-200 remove-from-order-btn"
-                                    data-product-id="${item.id}">
-                                Remove
-                            </button>
-                        </div>
-                    `;
-                    orderListDiv.insertAdjacentHTML('beforeend', orderItemHtml);
-                });
-                updateOrderTotals(); // Call new function to update totals
-                orderTotalsSummaryDiv.classList.remove('hidden'); // Show totals if order has items
-            }
-            attachOrderListEventListeners();
-        }
-
-        /**
-         * Calculates and updates the order totals summary.
-         */
-        function updateOrderTotals() {
-            let totalQuantityNonGlow = 0;
-            let totalQuantityGlow = 0;
-            let totalQuantityEnvelope = 0;
-
-            currentOrder.forEach(item => {
-                if (item.sku === ENVELOPE_SKU) {
-                    totalQuantityEnvelope += item.quantity;
-                } else if (item.title.toLowerCase().includes('glow in the dark') || item.sku.toLowerCase().includes('glow in the dark') || item.sku.toLowerCase().includes('gitd')) {
-                    totalQuantityGlow += item.quantity;
+            const rowObject = {};
+            headers.forEach((header, index) => {
+                if (header === 'searchTerms') {
+                    rowObject[header] = values[index].split(',').map(term => term.trim().toLowerCase()).filter(term => term !== '');
                 } else {
-                    totalQuantityNonGlow += item.quantity;
+                    rowObject[header] = values[index];
                 }
             });
-
-            totalNonGlowSpan.textContent = new Intl.NumberFormat('en-US').format(totalQuantityNonGlow);
-            totalGlowSpan.textContent = new Intl.NumberFormat('en-US').format(totalQuantityGlow);
-            totalEnvelopeSpan.textContent = new Intl.NumberFormat('en-US').format(totalQuantityEnvelope * 1000); // Format in 1,000s
+            data.push(rowObject);
         }
+        console.log('Parsed Data:', data);
+        return data;
+    }
 
-        /**
-         * Renders the order history list.
-         * @param {Array<object>} orders An array of order objects from Firestore.
-         */
-        function renderOrderHistory(orders) {
-            // Render for desktop view
-            orderHistoryListDesktop.innerHTML = '';
-            if (orders.length === 0) {
-                emptyOrderHistoryMessageDesktop.classList.remove('hidden');
-                orderHistoryListDesktop.appendChild(emptyOrderHistoryMessageDesktop);
-            } else {
-                emptyOrderHistoryMessageDesktop.classList.add('hidden');
-                orders.sort((a, b) => (b.timestamp?.toDate() || 0) - (a.timestamp?.toDate() || 0));
-                orders.forEach(order => {
-                    const orderHtml = createOrderHistoryCardHtml(order);
-                    orderHistoryListDesktop.insertAdjacentHTML('beforeend', orderHtml);
-                });
-            }
-
-            // Render for mobile modal view
-            orderHistoryListMobile.innerHTML = '';
-            if (orders.length === 0) {
-                emptyOrderHistoryMessageMobile.classList.remove('hidden');
-                orderHistoryListMobile.appendChild(emptyOrderHistoryMessageMobile);
-            } else {
-                emptyOrderHistoryMessageMobile.classList.add('hidden');
-                orders.sort((a, b) => (b.timestamp?.toDate() || 0) - (a.timestamp?.toDate() || 0));
-                orders.forEach(order => {
-                    const orderHtml = createOrderHistoryCardHtml(order);
-                    orderHistoryListMobile.insertAdjacentHTML('beforeend', orderHtml);
-                });
-            }
-            attachOrderHistoryEventListeners(orders); // Attach event listeners for history items for both lists
-        }
-
-        /**
-         * Helper function to create HTML for an order history card.
-         * @param {object} order The order object.
-         * @returns {string} HTML string.
-         */
-        function createOrderHistoryCardHtml(order) {
-            const orderDate = order.timestamp ? new Date(order.timestamp.toDate()).toLocaleString() : 'N/A';
-            return `
-                <div class="order-history-card" data-order-id="${order.id}">
-                    <button class="order-history-header" data-order-id="${order.id}">
-                        <h4 class="font-bold">${orderDate}</h4>
-                        <span class="toggle-details-btn" data-order-id="${order.id}">
-                            View Details
-                        </span>
-                    </button>
-                    <div id="order-details-${order.id}" class="order-history-details hidden">
-                        <p class="text-sm text-gray-600 mb-2">Ordered by: ${order.customer_name} (${order.customer_email})</p>
-                        ${order.customer_notes ? `<p class="text-sm text-gray-600 mb-2">Notes: ${order.customer_notes}</p>` : ''}
-                        <div class="ml-4">
-                            ${order.order_details.map(item => {
-                                const quantityDisplay = (item.sku === ENVELOPE_SKU) ? `${item.quantity} (in 1,000s)` : item.quantity;
-                                const packingDetailsDisplay = item.packing_details ? `<br><span class="text-xs text-gray-500">Packing: ${item.packing_details}</span>` : '';
-                                return `
-                                    <div class="flex items-center mb-2">
-                                        <img src="${item.imageUrl}" alt="${item.title}" class="w-10 h-10 object-contain rounded-md mr-2" onerror="this.onerror=null;this.src='https://placehold.co/40x40/CCCCCC/000000?text=No+Image';">
-                                        <p class="text-sm text-gray-700">${item.title} (SKU: ${item.sku}) - Qty: ${quantityDisplay}${packingDetailsDisplay}</p>
-                                    </div>
-                                `;
-                            }).join('')}
-                        </div>
-                        <button class="reorder-btn" data-order-id="${order.id}">Re-order This</button>
-                    </div>
-                </div>
-            `;
-        }
-
-
-        /**
-         * Toggles the visibility of order details in history.
-         * @param {string} orderId The ID of the order to toggle.
-         */
-        function toggleOrderDetails(orderId) {
-            // Find and toggle details in both desktop and mobile lists
-            const detailsDivDesktop = document.querySelector(`#orderHistoryListDesktop #order-details-${orderId}`);
-            const detailsDivMobile = document.querySelector(`#orderHistoryListMobile #order-details-${orderId}`);
-
-            if (detailsDivDesktop) {
-                detailsDivDesktop.classList.toggle('hidden');
-                const toggleButton = document.querySelector(`#orderHistoryListDesktop .order-history-header[data-order-id="${orderId}"] .toggle-details-btn`);
-                if (toggleButton) {
-                    toggleButton.textContent = detailsDivDesktop.classList.contains('hidden') ? 'View Details' : 'Hide Details';
-                }
-            }
-            if (detailsDivMobile) {
-                detailsDivMobile.classList.toggle('hidden');
-                const toggleButton = document.querySelector(`#orderHistoryListMobile .order-history-header[data-order-id="${orderId}"] .toggle-details-btn`);
-                if (toggleButton) {
-                    toggleButton.textContent = detailsDivMobile.classList.contains('hidden') ? 'View Details' : 'Hide Details';
-                }
-            }
-        }
-
-        /**
-         * Handles re-ordering a past order.
-         * @param {string} orderId The ID of the order to re-order.
-         */
-        function handleReorder(orderId) {
-            const orderToReorder = window.orderHistoryList.find(order => order.id === orderId); // Access from global window.orderHistoryList
-            if (orderToReorder) {
-                currentOrder = JSON.parse(JSON.stringify(orderToReorder.order_details)); // Deep copy to avoid reference issues
-                renderOrderList();
-                showMessageBox('Order items from history have been added to your current order!');
-                orderHistoryModal.classList.add('hidden'); // Close modal after re-order
-            } else {
-                showMessageBox('Could not find this order in history to re-order.');
-            }
-        }
-
-        /**
-         * Attaches event listeners for various interactions.
-         */
-        function attachEventListeners() {
-            searchButton.addEventListener('click', handleSearch);
-            searchInput.addEventListener('keypress', (e) => {
-                if (e.key === 'Enter') {
-                    handleSearch();
-                }
-            });
-            
-            // Allow clicking anywhere on the message box overlay to dismiss it
-            messageBox.addEventListener('click', (e) => {
-                // Only dismiss if the click is directly on the overlay, not its content
-                if (e.target === messageBox) {
-                    hideMessageBox();
-                }
-            });
-            // Still allow the OK button to dismiss it
-            closeMessageBoxButton.addEventListener('click', hideMessageBox);
-
-            // Authentication event listeners
-            authSubmitButton.addEventListener('click', handleAuthSubmit);
-            authNameInput.addEventListener('keypress', (e) => { // New: Name input keypress
-                if (e.key === 'Enter') {
-                    authEmailInput.focus();
-                }
-            });
-            authEmailInput.addEventListener('keypress', (e) => {
-                if (e.key === 'Enter') {
-                    authPasswordInput.focus();
-                }
-            });
-            authPasswordInput.addEventListener('keypress', (e) => {
-                if (e.key === 'Enter') {
-                    handleAuthSubmit();
-                }
-            });
-            toggleAuthMode.addEventListener('click', toggleAuthForm);
-            logoutButton.addEventListener('click', handleLogout);
-
-            // New: Floating Order History button and modal
-            floatingOrderHistoryBtn.addEventListener('click', () => {
-                orderHistoryModal.classList.remove('hidden');
-            });
-            orderHistoryModalCloseBtn.addEventListener('click', () => {
-                orderHistoryModal.classList.add('hidden');
-            });
-            // Allow clicking outside the modal content to close it
-            orderHistoryModal.addEventListener('click', (e) => {
-                if (e.target === orderHistoryModal) {
-                    orderHistoryModal.classList.add('hidden');
-                }
-            });
-
-            // Proofing System Event Listeners
-            generateProofBtn.addEventListener('click', generateProofAndShowModal);
-            closeProofModal.addEventListener('click', () => proofModal.classList.add('hidden'));
-            approveProofBtn.addEventListener('click', handleSubmitOrder); // Approve & Submit calls handleSubmitOrder
-            reviseOrderBtn.addEventListener('click', () => proofModal.classList.add('hidden')); // Revise just closes the modal
-            // Allow clicking outside the modal content to close it
-            proofModal.addEventListener('click', (e) => {
-                if (e.target === proofModal) {
-                    proofModal.classList.add('hidden');
-                }
-            });
-
-            // Custom Uploads Event Listeners
-            uploadCustomFileBtn.addEventListener('click', handleFileUpload);
-        }
-
-        /**
-         * Attaches event listeners specifically for the dynamically rendered order list buttons.
-         */
-        function attachOrderListEventListeners() {
-            document.querySelectorAll('.remove-from-order-btn').forEach(button => {
-                button.addEventListener('click', (e) => {
-                    const productId = e.target.dataset.productId;
-                    currentOrder = currentOrder.filter(item => item.id !== productId);
-                    renderOrderList(); // Re-render and update totals
-                });
-            });
-        }
-
-        /**
-         * Attaches event listeners specifically for the dynamically rendered order history items.
-         * @param {Array<object>} orders The current list of order history objects.
-         */
-        function attachOrderHistoryEventListeners(orders) {
-            // Store orders globally for re-order functionality
-            window.orderHistoryList = orders; 
-
-            // Event listener for the entire header (button) to toggle details
-            document.querySelectorAll('.order-history-header').forEach(button => {
-                button.addEventListener('click', (e) => {
-                    // Ensure the click is not on the reorder button itself, if we add line item reorder later
-                    if (!e.target.classList.contains('reorder-btn')) {
-                        const orderId = e.currentTarget.dataset.orderId; // Use currentTarget as the listener is on the button
-                        toggleOrderDetails(orderId);
-                    }
-                });
-            });
-
-            document.querySelectorAll('.reorder-btn').forEach(button => {
-                button.addEventListener('click', (e) => {
-                    const orderId = e.target.dataset.orderId;
-                    handleReorder(orderId);
-                });
-            });
-        }
-
-        // --- AUTHENTICATION LOGIC ---
-
-        /**
-         * Toggles between login and signup forms.
-         */
-        function toggleAuthForm() {
-            isLoginMode = !isLoginMode;
-            authError.classList.add('hidden'); // Clear previous errors
-            authNameInput.value = ''; // Clear name input
-            authEmailInput.value = '';
-            authPasswordInput.value = '';
-
-            if (isLoginMode) {
-                authTitle.textContent = 'Login to Access Portal';
-                authNameInput.classList.add('hidden'); // Hide name input for login
-                authNameInput.style.display = 'none'; // Explicitly hide
-                authSubmitButton.textContent = 'Login';
-                toggleAuthModeText.textContent = "Don't have an account?";
-                toggleAuthMode.textContent = 'Sign Up';
-                authEmailInput.autocomplete = 'email';
-                authPasswordInput.autocomplete = 'current-password';
-            } else {
-                authTitle.textContent = 'Sign Up for Portal Access';
-                authNameInput.classList.remove('hidden'); // Show name input for signup
-                authNameInput.style.display = 'block'; // Explicitly show
-                authSubmitButton.textContent = 'Sign Up';
-                toggleAuthModeText.textContent = "Already have an account?";
-                toggleAuthMode.textContent = 'Login';
-                authEmailInput.autocomplete = 'new-password'; // Suggest new password for signup
-                authPasswordInput.autocomplete = 'new-password';
-            }
-        }
-
-        /**
-         * Handles login or signup based on the current mode.
-         */
-        async function handleAuthSubmit() {
-            const name = authNameInput.value.trim(); // Get name for signup
-            const email = authEmailInput.value.trim();
-            const password = authPasswordInput.value.trim();
-
-            if (!email || !password) {
-                authError.textContent = 'Please enter both email and password.';
-                authError.classList.remove('hidden');
-                return;
-            }
-            if (!isLoginMode && !name) { // Name is required only for signup
-                authError.textContent = 'Please enter your name.';
-                authError.classList.remove('hidden');
-                return;
-            }
-
-            authSubmitButton.disabled = true;
-            authError.classList.add('hidden');
-
- try {
-    if (isLoginMode) {
-        // Sign in with email and password
-        const userCredential = await signInWithEmailAndPassword(auth, email, password);
-        const user = userCredential.user;
-
-        // Add a document or update the existing one with a merge,
-        // so it doesn't overwrite any other data.
-        await setDoc(doc(db, `artifacts/${appId}/users_profile`, user.uid), {
-            name: user.displayName || email, // Use display name if available, otherwise use email
-            email: email,
-        }, { merge: true });
-
-    } else {
-        // Create a new user with email and password
-        const userCredential = await createUserWithEmailAndPassword(auth, email, password);
-        const user = userCredential.user;
-
-        // Save user profile to Firestore on creation
-        await setDoc(doc(db, `artifacts/${appId}/users_profile`, user.uid), {
-            name: name,
-            email: email,
-            createdAt: serverTimestamp()
-        });
-    } // <-- The try block ends here. No code should be between this and the 'catch'
-
-} catch (error) {
-    // This is a catch block for any authentication errors
-    console.error("Authentication failed:", error.message);
-    showMessage(`Authentication failed: ${error.message}`);
-}
-                // Rely on onAuthStateChanged to handle UI transition and message boxes
-            } catch (error) {
-                let errorMessage = 'An unknown error occurred.';
-                switch (error.code) {
-                    case 'auth/invalid-email':
-                        errorMessage = 'Invalid email address format.';
-                        break;
-                    case 'auth/user-disabled':
-                        errorMessage = 'Your account has-been disabled.';
-                        break;
-                    case 'auth/user-not-found':
-                    case 'auth/wrong-password':
-                        errorMessage = 'Incorrect email or password.';
-                        break;
-                    case 'auth/email-already-in-use':
-                        errorMessage = 'This email is already registered. Try logging in.';
-                        break;
-                    case 'auth/weak-password':
-                        errorMessage = 'Password is too weak. Please use at least 6 characters.';
-                        break;
-                    default:
-                        console.error('Firebase Auth Error:', error);
-                        errorMessage = `Authentication failed: ${error.message}`;
-                }
-                authError.textContent = errorMessage;
-                authError.classList.remove('hidden');
-            } finally {
-                authSubmitButton.disabled = false;
-            }
-        }
-
-        /**
-         * Handles user logout.
-         */
-        async function handleLogout() {
-            try {
-                await signOut(auth);
-                showMessageBox('You have been logged out.');
-                // onAuthStateChanged will handle UI changes
-            } catch (error) {
-                console.error('Error logging out:', error);
-                showMessageBox('Failed to log out. Please try again.');
-            }
-        }
-
-        // --- EVENT HANDLERS ---
-
-        /**
-         * Handles the product search logic. Now searches the local productCatalog array.
-         */
-        async function handleSearch() {
-            const searchTerm = searchInput.value.trim().toLowerCase();
-            searchResultsDiv.innerHTML = ''; // Clear previous results
-            noResultsDiv.classList.add('hidden');
-            loadingIndicator.textContent = 'Searching...'; // Reset text
+    async function fetchProductCatalog() {
+        try {
+            loadingIndicator.textContent = 'Loading product catalog...';
             loadingIndicator.classList.remove('hidden');
+            console.log('Fetching product catalog from:', GOOGLE_SHEET_CSV_URL);
 
-            if (!searchTerm) {
-                loadingIndicator.classList.add('hidden');
-                showMessageBox('Please enter a part number, name, or barcode to search.');
-                return;
+            const response = await fetch(GOOGLE_SHEET_CSV_URL);
+            if (!response.ok) {
+                throw new Error(`Failed to fetch product catalog: ${response.statusText}`);
+            }
+            const csvText = await response.text();
+            console.log('Raw CSV Text:', csvText.substring(0, 200) + '...');
+            productCatalog = parseCSV(csvText);
+
+            const envelopeItem = {
+                id: 'CG-SE1',
+                title: 'Custom Sticker Envelopes',
+                sku: 'CG-SE1',
+                imageUrl: 'https://storage.googleapis.com/cg-portal-assets/CG-SE1%20White%20Bubble%20Sticker%20Envelope.png',
+                searchTerms: ['envelope', 'envelopes', 'cg-se1']
+            };
+            if (!productCatalog.some(item => item.id === envelopeItem.id)) {
+                productCatalog.push(envelopeItem);
             }
 
-            // Simulate API call delay for user experience, but actual data is local after fetch
-            await new Promise(resolve => setTimeout(resolve, 300)); 
-
-            // Filter the productCatalog fetched from Google Sheet
-            const filteredProducts = productCatalog.filter(product => 
-                (product.searchTerms && Array.isArray(product.searchTerms) && product.searchTerms.some(term => term.includes(searchTerm))) || // Check if searchTerms is an array
-                (product.title && typeof product.title === 'string' && product.title.toLowerCase().includes(searchTerm)) || // Check if title is string
-                (product.sku && typeof product.sku === 'string' && product.sku.toLowerCase().includes(searchTerm)) // Check if sku is string
-            );
-
-            console.log('Filtered Products (after search):', filteredProducts); // Log filtered products
-
+            console.log('Final Product Catalog:', productCatalog);
             loadingIndicator.classList.add('hidden');
-
-            if (filteredProducts.length > 0) {
-                filteredProducts.forEach(product => {
-                    searchResultsDiv.insertAdjacentHTML('beforeend', renderProductCard(product));
-                });
-                // Attach event listeners to newly rendered 'Add' buttons
-                document.querySelectorAll('.add-to-order-btn').forEach(button => {
-                    button.addEventListener('click', (e) => {
-                        const productId = e.target.dataset.productId;
-                        const productToAdd = productCatalog.find(p => p.id === productId); // Find the full product object
-
-                        if (!productToAdd) {
-                            console.error('Product not found in catalog:', productId);
-                            showMessageBox('Error: Product not found in catalog. Please try searching again.');
-                            return;
-                        }
-
-                        // Use the ID generated for the input to find the quantity input
-                        // Re-sanitizing productId for lookup, though it should already be clean from renderProductCard
-                        const uniqueInputId = `qty-${productId.replace(/[^a-zA-Z0-9-_]/g, '')}`; 
-                        const quantityInput = document.getElementById(uniqueInputId); 
-                        
-                        const quantity = parseInt(quantityInput.value, 10);
-
-                        if (isNaN(quantity) || quantity <= 0) {
-                            showMessageBox('Please enter a valid quantity (1 or more).');
-                            return;
-                        }
-
-                        const existingItemIndex = currentOrder.findIndex(item => item.id === productId);
-
-                        if (existingItemIndex > -1) {
-                            currentOrder[existingItemIndex].quantity += quantity;
-                        } else {
-                            // Changed from push() to unshift() to add to the top
-                            currentOrder.unshift({ 
-                                id: productToAdd.id,
-                                title: productToAdd.title || '', // Ensure string
-                                sku: productToAdd.sku || '',     // Ensure string
-                                imageUrl: productToAdd.imageUrl || 'https://placehold.co/60x60/CCCCCC/000000?text=No+Image', // Ensure string with fallback
-                                quantity: quantity || 0          // Ensure number
-                            });
-                        }
-                        renderOrderList(); // Re-render and update totals
-                        // Removed the annoying popup when adding an item: showMessageBox(`${quantity} x ${productToAdd.title} added to order!`);
-                    });
-                });
-            } else {
-                noResultsDiv.classList.remove('hidden');
-            }
+        } catch (error) {
+            console.error('Error fetching product catalog:', error);
+            loadingIndicator.classList.add('hidden');
+            showMessageBox('Error loading product catalog. Please try refreshing or contact support.');
         }
+    }
 
-        /**
-         * Handles file upload to Firebase Storage and adds to current order.
-         */
-        async function handleFileUpload() {
-            if (!currentUserId) {
-                showMessageBox('Please log in to upload custom designs.');
-                return;
-            }
+    function showMessageBox(message) {
+        messageText.textContent = message;
+        messageBox.classList.remove('hidden');
+    }
 
-            const files = customFileUploadInput.files;
-            if (files.length === 0) {
-                showMessageBox('Please select one or more PNG files to upload.');
-                return;
-            }
+    function hideMessageBox() {
+        messageBox.classList.add('hidden');
+    }
 
-            // Clear previous upload list display
-            customUploadList.innerHTML = '';
+    function renderProductCard(product) {
+        const productId = product.id || `unknown-id-${Math.random().toString(36).substring(7)}`;
+        const uniqueId = productId.replace(/[^a-zA-Z0-9-_]/g, '');
+        const initialQuantity = (product.sku === ENVELOPE_SKU) ? 1 : 100;
+        const minQuantity = (product.sku === ENVELOPE_SKU) ? 1 : 1;
+        const quantityUnit = (product.sku === ENVELOPE_SKU) ? ' (x1000)' : '';
 
-            for (const file of files) {
-                if (file.type !== 'image/png') {
-                    showMessageBox(`Skipping "${file.name}": Only PNG files are allowed.`);
-                    continue;
-                }
-                if (file.size > 5 * 1024 * 1024) { // 5MB limit
-                    showMessageBox(`Skipping "${file.name}": File size exceeds 5MB limit.`);
-                    continue;
-                }
+        return `
+            <div class="w-full sm:w-56 lg:w-64 flex flex-col items-center bg-gray-50 border border-gray-200 rounded-lg p-4 shadow-sm text-center">
+                <img src="${product.imageUrl}" alt="${product.title}" class="w-20 h-20 object-contain rounded-lg mb-4 flex-shrink-0" onerror="this.onerror=null;this.src='https://placehold.co/100x100/CCCCCC/000000?text=No+Image';">
+                <div class="flex-grow w-full">
+                    <h3 class="font-bold text-gray-800 break-words">${product.title}</h3>
+                    <p class="text-sm text-gray-600">SKU: ${product.sku}</p>
+                </div>
+                <div class="flex flex-col items-center mt-4 w-full gap-2">
+                    <input type="number" value="${initialQuantity}" min="${minQuantity}"
+                           class="w-full p-2 border border-gray-300 rounded-lg text-center quantity-input"
+                           id="qty-${uniqueId}"
+                           data-product-id="${productId}"
+                           data-product-title="${product.title}"
+                           data-product-sku="${product.sku}"
+                           data-product-image="${product.imageUrl}">
+                    <button class="w-full px-3 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition duration-200 add-to-order-btn"
+                            data-product-id="${productId}">
+                        Add${quantityUnit}
+                    </button>
+                </div>
+            </div>
+        `;
+    }
 
-                const uploadItemId = `upload-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`;
-                const fileNameWithoutExt = file.name.split('.').slice(0, -1).join('.');
-                const uploadItemDiv = document.createElement('div');
-                uploadItemDiv.id = uploadItemId;
-                uploadItemDiv.className = 'flex items-center justify-between p-2 border border-gray-200 rounded-md bg-white shadow-sm';
-                uploadItemDiv.innerHTML = `
-                    <div class="flex items-center">
-                        <img src="https://placehold.co/40x40/CCCCCC/000000?text=..." alt="Loading" class="w-10 h-10 object-contain rounded-md mr-2">
-                        <div>
-                            <p class="font-semibold text-gray-800">${fileNameWithoutExt}</p>
-                            <p class="text-xs text-gray-500" id="${uploadItemId}-status">Uploading...</p>
-                        </div>
-                    </div>
-                `;
-                customUploadList.appendChild(uploadItemDiv);
-
-                try {
-                    // Create a unique path for each file in Firebase Storage
-                    const storagePath = `artifacts/${appId}/user_uploads/${currentUserId}/${Date.now()}-${file.name}`;
-                    const fileRef = ref(storage, storagePath);
-
-                    const snapshot = await uploadBytes(fileRef, file);
-                    const downloadURL = await getDownloadURL(snapshot.ref);
-
-                    const uploadedItem = {
-                        id: uploadItemId, // Use this ID for removal from currentOrder
-                        title: fileNameWithoutExt,
-                        sku: 'CUSTOM_UPLOAD', // Special SKU
-                        quantity: 2000, // Default quantity
-                        imageUrl: downloadURL,
-                        packing_details: '1500 in bags of 5, 500 bulk in 100s' // Hardcoded packing
-                    };
-
-                    currentOrder.unshift(uploadedItem); // Add to the top of the order
-                    renderOrderList();
-
-                    // Update UI for successful upload
-                    const statusElem = document.getElementById(`${uploadItemId}-status`);
-                    if (statusElem) {
-                        statusElem.textContent = 'Upload complete! Added to order.';
-                        statusElem.classList.remove('text-gray-500');
-                        statusElem.classList.add('text-green-600');
-                    }
-                    const imgElem = uploadItemDiv.querySelector('img');
-                    if (imgElem) {
-                        imgElem.src = downloadURL;
-                        imgElem.alt = fileNameWithoutExt;
-                    }
-                    // Optionally, remove the upload progress item after a short delay
-                    setTimeout(() => {
-                        if (uploadItemDiv.parentNode) {
-                            uploadItemDiv.parentNode.removeChild(uploadItemDiv);
-                        }
-                    }, 3000); // Remove after 3 seconds
-                    
-                } catch (error) {
-                    console.error('Error uploading file:', file.name, error);
-                    const statusElem = document.getElementById(`${uploadItemId}-status`);
-                    if (statusElem) {
-                        statusElem.textContent = `Upload failed for ${file.name}.`;
-                        statusElem.classList.remove('text-gray-500');
-                        statusElem.classList.add('text-red-600');
-                    }
-                    showMessageBox(`Failed to upload ${file.name}. Please try again.`);
-                }
-            }
-            // Clear the file input after processing all files
-            customFileUploadInput.value = '';
-        }
-
-
-        /**
-         * Generates the proof content and displays the proof modal.
-         */
-        function generateProofAndShowModal() {
-            const customerName = customerNameInput.value.trim();
-            const customerEmail = customerEmailInput.value.trim();
-            const customerNotes = customerNotesInput.value.trim();
-
-            if (currentOrder.length === 0) {
-                showMessageBox('Your order is empty. Please add some items before confirming.');
-                return;
-            }
-
-            if (!customerName || !customerEmail) {
-                showMessageBox('Please enter your Name and Email to confirm your order.');
-                return;
-            }
-
-            // Generate HTML for the proof modal using raw items and simple structure
-            let proofHtml = ``; 
-            if (customerNotes) {
-                proofHtml += `<p class="text-gray-700 mb-3"><strong>Notes:</strong> ${customerNotes}</p>`;
-            }
-            
-            // Flex container for the proof items
-            proofHtml += `<div class="flex flex-wrap justify-center gap-4">`; 
+    function renderOrderList() {
+        orderListDiv.innerHTML = '';
+        if (currentOrder.length === 0) {
+            emptyOrderMessage.classList.remove('hidden');
+            orderListDiv.appendChild(emptyOrderMessage);
+            orderTotalsSummaryDiv.classList.add('hidden');
+        } else {
+            emptyOrderMessage.classList.add('hidden');
             currentOrder.forEach(item => {
                 const quantityDisplay = (item.sku === ENVELOPE_SKU) ? `${item.quantity} (in 1,000s)` : item.quantity;
                 const packingDetailsDisplay = item.packing_details ? `<br><span class="text-xs text-gray-500">Packing: ${item.packing_details}</span>` : '';
 
-                proofHtml += `
-                    <div class="proof-item">
-                        <img src="${item.imageUrl}" alt="${item.title}" onerror="this.onerror=null;this.src='https://placehold.co/50x50/CCCCCC/000000?text=No+Image';" class="proof-item-img">
-                        <p class="text-xs text-gray-600 mt-1">${item.sku}</p>
-                        <div class="proof-item-details">
-                            <p class="font-medium text-gray-800">${item.title}</p>
-                            <p class="text-sm text-gray-600">Qty: ${quantityDisplay}${packingDetailsDisplay}</p>
+                const orderItemHtml = `
+                    <div class="flex items-center justify-between p-4 bg-white hover:bg-gray-50 transition duration-150">
+                        <div class="flex items-center">
+                            <img src="${item.imageUrl}" alt="${item.title}" class="w-16 h-16 object-contain rounded-lg mr-4" onerror="this.onerror=null;this.src='https://placehold.co/64x64/CCCCCC/000000?text=No+Image';">
+                            <div class="min-w-0">
+                                <h4 class="font-semibold text-gray-800 break-words w-full">${item.title}</h4>
+                                <p class="text-sm text-gray-600">SKU: ${item.sku} - Qty: ${quantityDisplay}${packingDetailsDisplay}</p>
+                            </div>
                         </div>
+                        <button class="px-3 py-1 bg-red-500 text-white rounded-lg hover:bg-red-600 transition duration-200 remove-from-order-btn"
+                                data-product-id="${item.id}">
+                            Remove
+                        </button>
                     </div>
                 `;
+                orderListDiv.insertAdjacentHTML('beforeend', orderItemHtml);
             });
-            proofHtml += `</div>`; // Close the flex container for items
+            updateOrderTotals();
+            orderTotalsSummaryDiv.classList.remove('hidden');
+        }
+        attachOrderListEventListeners();
+    }
 
-            proofContent.innerHTML = proofHtml;
-            proofModal.classList.remove('hidden');
+    function updateOrderTotals() {
+        let totalQuantityNonGlow = 0;
+        let totalQuantityGlow = 0;
+        let totalQuantityEnvelope = 0;
+
+        currentOrder.forEach(item => {
+            if (item.sku === ENVELOPE_SKU) {
+                totalQuantityEnvelope += item.quantity;
+            } else if (item.title.toLowerCase().includes('glow in the dark') || item.sku.toLowerCase().includes('glow in the dark') || item.sku.toLowerCase().includes('gitd')) {
+                totalQuantityGlow += item.quantity;
+            } else {
+                totalQuantityNonGlow += item.quantity;
+            }
+        });
+
+        totalNonGlowSpan.textContent = new Intl.NumberFormat('en-US').format(totalQuantityNonGlow);
+        totalGlowSpan.textContent = new Intl.NumberFormat('en-US').format(totalQuantityGlow);
+        totalEnvelopeSpan.textContent = new Intl.NumberFormat('en-US').format(totalQuantityEnvelope * 1000);
+    }
+
+    function renderOrderHistory(orders) {
+        orderHistoryListDesktop.innerHTML = '';
+        if (orders.length === 0) {
+            emptyOrderHistoryMessageDesktop.classList.remove('hidden');
+            orderHistoryListDesktop.appendChild(emptyOrderHistoryMessageDesktop);
+        } else {
+            emptyOrderHistoryMessageDesktop.classList.add('hidden');
+            orders.sort((a, b) => (b.timestamp?.toDate() || 0) - (a.timestamp?.toDate() || 0));
+            orders.forEach(order => {
+                const orderHtml = createOrderHistoryCardHtml(order);
+                orderHistoryListDesktop.insertAdjacentHTML('beforeend', orderHtml);
+            });
         }
 
-        /**
-         * Generates the HTML table for order items to be embedded in the admin email.
-         * @param {Array<object>} orderItems The array of order item objects.
-         * @returns {string} HTML string for the table body.
-         */
-        function generateAdminOrderTableHtml(orderItems) {
-            let tableRowsHtml = '';
-            orderItems.forEach(item => {
-                const quantityDisplay = (item.sku === ENVELOPE_SKU) ? `${item.quantity} (in 1,000s)` : item.quantity;
-                const packingDetailsDisplay = item.packing_details ? `<br><span style="font-size: 0.75em; color: #666;">Packing: ${item.packing_details}</span>` : '';
-
-                tableRowsHtml += `
-                    <tr style="vertical-align: top;">
-                        <td style="padding: 8px; border: 1px solid #ddd; text-align: center;">
-                            <img src="${item.imageUrl}" alt="${item.title}" style="max-width: 60px; max-height: 60px; object-fit: contain; border-radius: 4px; border: 1px solid #e2e8f0; box-shadow: 0 1px 2px rgba(0,0,0,0.1); display: block; margin: 0 auto;" onerror="this.onerror=null;this.src='https://placehold.co/60x60/CCCCCC/000000?text=No+Image';">
-                        </td>
-                        <td style="padding: 8px; border: 1px solid #ddd;">${item.sku}</td>
-                        <td style="padding: 8px; border: 1px solid #ddd;">${item.title}${packingDetailsDisplay}</td>
-                        <td style="padding: 8px; border: 1px solid #ddd; text-align: right;">${quantityDisplay}</td>
-                    </tr>
-                `;
+        orderHistoryListMobile.innerHTML = '';
+        if (orders.length === 0) {
+            emptyOrderHistoryMessageMobile.classList.remove('hidden');
+            orderHistoryListMobile.appendChild(emptyOrderHistoryMessageMobile);
+        } else {
+            emptyOrderHistoryMessageMobile.classList.add('hidden');
+            orders.sort((a, b) => (b.timestamp?.toDate() || 0) - (a.timestamp?.toDate() || 0));
+            orders.forEach(order => {
+                const orderHtml = createOrderHistoryCardHtml(order);
+                orderHistoryListMobile.insertAdjacentHTML('beforeend', orderHtml);
             });
-            return `
-                <table style="width: 100%; border-collapse: collapse; border: 1px solid #ddd; margin-top: 15px;">
-                    <thead>
-                        <tr style="background-color: #f2f2f2;">
-                            <th style="padding: 8px; border: 1px solid #ddd; text-align: center; width: 100px;">Image</th>
-                            <th style="padding: 8px; border: 1px solid #ddd; text-align: left;">SKU</th>
-                            <th style="padding: 8px; border: 1px solid #ddd; text-align: left;">Item</th>
-                            <th style="padding: 8px; border: 1px solid #ddd; text-align: right; width: 80px;">Quantity</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        ${tableRowsHtml}
-                    </tbody>
-                </table>
+        }
+        attachOrderHistoryEventListeners(orders);
+    }
+
+    function createOrderHistoryCardHtml(order) {
+        const orderDate = order.timestamp ? new Date(order.timestamp.toDate()).toLocaleString() : 'N/A';
+        return `
+            <div class="order-history-card" data-order-id="${order.id}">
+                <button class="order-history-header" data-order-id="${order.id}">
+                    <h4 class="font-bold">${orderDate}</h4>
+                    <span class="toggle-details-btn" data-order-id="${order.id}">
+                        View Details
+                    </span>
+                </button>
+                <div id="order-details-${order.id}" class="order-history-details hidden">
+                    <p class="text-sm text-gray-600 mb-2">Ordered by: ${order.customer_name} (${order.customer_email})</p>
+                    ${order.customer_notes ? `<p class="text-sm text-gray-600 mb-2">Notes: ${order.customer_notes}</p>` : ''}
+                    <div class="ml-4">
+                        ${order.order_details.map(item => {
+                            const quantityDisplay = (item.sku === ENVELOPE_SKU) ? `${item.quantity} (in 1,000s)` : item.quantity;
+                            const packingDetailsDisplay = item.packing_details ? `<br><span class="text-xs text-gray-500">Packing: ${item.packing_details}</span>` : '';
+                            return `
+                                <div class="flex items-center mb-2">
+                                    <img src="${item.imageUrl}" alt="${item.title}" class="w-10 h-10 object-contain rounded-md mr-2" onerror="this.onerror=null;this.src='https://placehold.co/40x40/CCCCCC/000000?text=No+Image';">
+                                    <p class="text-sm text-gray-700">${item.title} (SKU: ${item.sku}) - Qty: ${quantityDisplay}${packingDetailsDisplay}</p>
+                                </div>
+                            `;
+                        }).join('')}
+                    </div>
+                    <button class="reorder-btn" data-order-id="${order.id}">Re-order This</button>
+                </div>
+            </div>
+        `;
+    }
+
+    function toggleOrderDetails(orderId) {
+        const detailsDivDesktop = document.querySelector(`#orderHistoryListDesktop #order-details-${orderId}`);
+        const detailsDivMobile = document.querySelector(`#orderHistoryListMobile #order-details-${orderId}`);
+
+        if (detailsDivDesktop) {
+            detailsDivDesktop.classList.toggle('hidden');
+            const toggleButton = document.querySelector(`#orderHistoryListDesktop .order-history-header[data-order-id="${orderId}"] .toggle-details-btn`);
+            if (toggleButton) {
+                toggleButton.textContent = detailsDivDesktop.classList.contains('hidden') ? 'View Details' : 'Hide Details';
+            }
+        }
+        if (detailsDivMobile) {
+            detailsDivMobile.classList.toggle('hidden');
+            const toggleButton = document.querySelector(`#orderHistoryListMobile .order-history-header[data-order-id="${orderId}"] .toggle-details-btn`);
+            if (toggleButton) {
+                toggleButton.textContent = detailsDivMobile.classList.contains('hidden') ? 'View Details' : 'Hide Details';
+            }
+        }
+    }
+
+    function handleReorder(orderId) {
+        const orderToReorder = window.orderHistoryList.find(order => order.id === orderId);
+        if (orderToReorder) {
+            currentOrder = JSON.parse(JSON.stringify(orderToReorder.order_details));
+            renderOrderList();
+            showMessageBox('Order items from history have been added to your current order!');
+            orderHistoryModal.classList.add('hidden');
+        } else {
+            showMessageBox('Could not find this order in history to re-order.');
+        }
+    }
+
+    function attachEventListeners() {
+        searchButton.addEventListener('click', handleSearch);
+        searchInput.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') {
+                handleSearch();
+            }
+        });
+
+        messageBox.addEventListener('click', (e) => {
+            if (e.target === messageBox) {
+                hideMessageBox();
+            }
+        });
+        closeMessageBoxButton.addEventListener('click', hideMessageBox);
+
+        authSubmitButton.addEventListener('click', handleAuthSubmit);
+        authNameInput.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') {
+                authEmailInput.focus();
+            }
+        });
+        authEmailInput.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') {
+                authPasswordInput.focus();
+            }
+        });
+        authPasswordInput.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') {
+                handleAuthSubmit();
+            }
+        });
+        toggleAuthMode.addEventListener('click', toggleAuth RecognizeAuthForm);
+        logoutButton.addEventListener('click', handleLogout);
+
+        floatingOrderHistoryBtn.addEventListener('click', () => {
+            orderHistoryModal.classList.remove('hidden');
+        });
+        orderHistoryModalCloseBtn.addEventListener('click', () => {
+            orderHistoryModal.classList.add('hidden');
+        });
+        orderHistoryModal.addEventListener('click', (e) => {
+            if (e.target === orderHistoryModal) {
+                orderHistoryModal.classList.add('hidden');
+            }
+        });
+
+        generateProofBtn.addEventListener('click', generateProofAndShowModal);
+        closeProofModal.addEventListener('click', () => proofModal.classList.add('hidden'));
+        approveProofBtn.addEventListener('click', handleSubmitOrder);
+        reviseOrderBtn.addEventListener('click', () => proofModal.classList.add('hidden'));
+        proofModal.addEventListener('click', (e) => {
+            if (e.target === proofModal) {
+                proofModal.classList.add('hidden');
+            }
+        });
+
+        uploadCustomFileBtn.addEventListener('click', handleFileUpload);
+    }
+
+    function attachOrderListEventListeners() {
+        document.querySelectorAll('.remove-from-order-btn').forEach(button => {
+            button.addEventListener('click', (e) => {
+                const productId = e.target.dataset.productId;
+                currentOrder = currentOrder.filter(item => item.id !== productId);
+                renderOrderList();
+            });
+        });
+    }
+
+    function attachOrderHistoryEventListeners(orders) {
+        window.orderHistoryList = orders;
+
+        document.querySelectorAll('.order-history-header').forEach(button => {
+            button.addEventListener('click', (e) => {
+                if (!e.target.classList.contains('reorder-btn')) {
+                    const orderId = e.currentTarget.dataset.orderId;
+                    toggleOrderDetails(orderId);
+                }
+            });
+        });
+
+        document.querySelectorAll('.reorder-btn').forEach(button => {
+            button.addEventListener('click', (e) => {
+                const orderId = e.target.dataset.orderId;
+                handleReorder(orderId);
+            });
+        });
+    }
+
+    // --- AUTHENTICATION LOGIC ---
+
+    function toggleAuthForm() {
+        isLoginMode = !isLoginMode;
+        authError.classList.add('hidden');
+        authNameInput.value = '';
+        authEmailInput.value = '';
+        authPasswordInput.value = '';
+
+        if (isLoginMode) {
+            authTitle.textContent = 'Login to Access Portal';
+            authNameInput.classList.add('hidden');
+            authNameInput.style.display = 'none';
+            authSubmitButton.textContent = 'Login';
+            toggleAuthModeText.textContent = "Don't have an account?";
+            toggleAuthMode.textContent = 'Sign Up';
+            authEmailInput.autocomplete = 'email';
+            authPasswordInput.autocomplete = 'current-password';
+        } else {
+            authTitle.textContent = 'Sign Up for Portal Access';
+            authNameInput.classList.remove('hidden');
+            authNameInput.style.display = 'block';
+            authSubmitButton.textContent = 'Sign Up';
+            toggleAuthModeText.textContent = "Already have an account?";
+            toggleAuthMode.textContent = 'Login';
+            authEmailInput.autocomplete = 'new-password';
+            authPasswordInput.autocomplete = 'new-password';
+        }
+    }
+
+    async function handleAuthSubmit() {
+        const name = authNameInput.value.trim();
+        const email = authEmailInput.value.trim();
+        const password = authPasswordInput.value.trim();
+
+        if (!email || !password) {
+            authError.textContent = 'Please enter both email and password.';
+            authError.classList.remove('hidden');
+            return;
+        }
+        if (!isLoginMode && !name) {
+            authError.textContent = 'Please enter your name.';
+            authError.classList.remove('hidden');
+            return;
+        }
+
+        authSubmitButton.disabled = true;
+        authError.classList.add('hidden');
+
+        try {
+            if (isLoginMode) {
+                const userCredential = await signInWithEmailAndPassword(auth, email, password);
+                const user = userCredential.user;
+                await setDoc(doc(db, `artifacts/${appId}/users_profile`, user.uid), {
+                    name: user.displayName || email,
+                    email: email,
+                }, { merge: true });
+            } else {
+                const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+                const user = userCredential.user;
+                await setDoc(doc(db, `artifacts/${appId}/users_profile`, user.uid), {
+                    name: name,
+                    email: email,
+                    createdAt: serverTimestamp()
+                });
+            }
+            console.log("Authentication successful, user is now logged in.");
+            authOverlay.style.display = 'none';
+            authOverlay.classList.add('hidden');
+            mainContainer.style.display = 'flex';
+            mainContainer.classList.remove('hidden');
+            fetchProductCatalog();
+        } catch (error) {
+            let errorMessage = 'An unknown error occurred.';
+            switch (error.code) {
+                case 'auth/invalid-email':
+                    errorMessage = 'Invalid email address format.';
+                    break;
+                case 'auth/user-disabled':
+                    errorMessage = 'Your account has been disabled.';
+                    break;
+                case 'auth/user-not-found':
+                case 'auth/wrong-password':
+                    errorMessage = 'Incorrect email or password.';
+                    break;
+                case 'auth/email-already-in-use':
+                    errorMessage = 'This email is already registered. Try logging in.';
+                    break;
+                case 'auth/weak-password':
+                    errorMessage = 'Password is too weak. Please use at least 6 characters.';
+                    break;
+                default:
+                    console.error('Firebase Auth Error:', error);
+                    errorMessage = `Authentication failed: ${error.message}`;
+            }
+            authError.textContent = errorMessage;
+            authError.classList.remove('hidden');
+        } finally {
+            authSubmitButton.disabled = false;
+        }
+    }
+
+    async function handleLogout() {
+        try {
+            await signOut(auth);
+            showMessageBox('You have been logged out.');
+        } catch (error) {
+            console.error('Error logging out:', error);
+            showMessageBox('Failed to log out. Please try again.');
+        }
+    }
+
+    // --- EVENT HANDLERS ---
+
+    async function handleSearch() {
+        const searchTerm = searchInput.value.trim().toLowerCase();
+        searchResultsDiv.innerHTML = '';
+        noResultsDiv.classList.add('hidden');
+        loadingIndicator.textContent = 'Searching...';
+        loadingIndicator.classList.remove('hidden');
+
+        if (!searchTerm) {
+            loadingIndicator.classList.add('hidden');
+            showMessageBox('Please enter a part number, name, or barcode to search.');
+            return;
+        }
+
+        await new Promise(resolve => setTimeout(resolve, 300));
+
+        const filteredProducts = productCatalog.filter(product =>
+            (product.searchTerms && Array.isArray(product.searchTerms) && product.searchTerms.some(term => term.includes(searchTerm))) ||
+            (product.title && typeof product.title === 'string' && product.title.toLowerCase().includes(searchTerm)) ||
+            (product.sku && typeof product.sku === 'string' && product.sku.toLowerCase().includes(searchTerm))
+        );
+
+        console.log('Filtered Products:', filteredProducts);
+        loadingIndicator.classList.add('hidden');
+
+        if (filteredProducts.length > 0) {
+            filteredProducts.forEach(product => {
+                searchResultsDiv.insertAdjacentHTML('beforeend', renderProductCard(product));
+            });
+            document.querySelectorAll('.add-to-order-btn').forEach(button => {
+                button.addEventListener('click', (e) => {
+                    const productId = e.target.dataset.productId;
+                    const productToAdd = productCatalog.find(p => p.id === productId);
+
+                    if (!productToAdd) {
+                        console.error('Product not found:', productId);
+                        showMessageBox('Error: Product not found. Please try searching again.');
+                        return;
+                    }
+
+                    const uniqueInputId = `qty-${productId.replace(/[^a-zA-Z0-9-_]/g, '')}`;
+                    const quantityInput = document.getElementById(uniqueInputId);
+                    const quantity = parseInt(quantityInput.value, 10);
+
+                    if (isNaN(quantity) || quantity <= 0) {
+                        showMessageBox('Please enter a valid quantity (1 or more).');
+                        return;
+                    }
+
+                    const existingItemIndex = currentOrder.findIndex(item => item.id === productId);
+
+                    if (existingItemIndex > -1) {
+                        currentOrder[existingItemIndex].quantity += quantity;
+                    } else {
+                        currentOrder.unshift({
+                            id: productToAdd.id,
+                            title: productToAdd.title || '',
+                            sku: productToAdd.sku || '',
+                            imageUrl: productToAdd.imageUrl || 'https://placehold.co/60x60/CCCCCC/000000?text=No+Image',
+                            quantity: quantity || 0
+                        });
+                    }
+                    renderOrderList();
+                });
+            });
+        } else {
+            noResultsDiv.classList.remove('hidden');
+        }
+    }
+
+    async function handleFileUpload() {
+        if (!currentUserId) {
+            showMessageBox('Please log in to upload custom designs.');
+            return;
+        }
+
+        const files = customFileUploadInput.files;
+        if (files.length === 0) {
+            showMessageBox('Please select one or more PNG files to upload.');
+            return;
+        }
+
+        customUploadList.innerHTML = '';
+
+        for (const file of files) {
+            if (file.type !== 'image/png') {
+                showMessageBox(`Skipping "${file.name}": Only PNG files are allowed.`);
+                continue;
+            }
+            if (file.size > 5 * 1024 * 1024) {
+                showMessageBox(`Skipping "${file.name}": File size exceeds 5MB limit.`);
+                continue;
+            }
+
+            const uploadItemId = `upload-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`;
+            const fileNameWithoutExt = file.name.split('.').slice(0, -1).join('.');
+            const uploadItemDiv = document.createElement('div');
+            uploadItemDiv.id = uploadItemId;
+            uploadItemDiv.className = 'flex items-center justify-between p-2 border border-gray-200 rounded-md bg-white shadow-sm';
+            uploadItemDiv.innerHTML = `
+                <div class="flex items-center">
+                    <img src="https://placehold.co/40x40/CCCCCC/000000?text=..." alt="Loading" class="w-10 h-10 object-contain rounded-md mr-2">
+                    <div>
+                        <p class="font-semibold text-gray-800">${fileNameWithoutExt}</p>
+                        <p class="text-xs text-gray-500" id="${uploadItemId}-status">Uploading...</p>
+                    </div>
+                </div>
             `;
+            customUploadList.appendChild(uploadItemDiv);
+
+            try {
+                const storagePath = `artifacts/${appId}/user_uploads/${currentUserId}/${Date.now()}-${file.name}`;
+                const fileRef = ref(storage, storagePath);
+                const snapshot = await uploadBytes(fileRef, file);
+                const downloadURL = await getDownloadURL(snapshot.ref);
+
+                const uploadedItem = {
+                    id: uploadItemId,
+                    title: fileNameWithoutExt,
+                    sku: 'CUSTOM_UPLOAD',
+                    quantity: 2000,
+                    imageUrl: downloadURL,
+                    packing_details: '1500 in bags of 5, 500 bulk in 100s'
+                };
+
+                currentOrder.unshift(uploadedItem);
+                renderOrderList();
+
+                const statusElem = document.getElementById(`${uploadItemId}-status`);
+                if (statusElem) {
+                    statusElem.textContent = 'Upload complete! Added to order.';
+                    statusElem.classList.remove('text-gray-500');
+                    statusElem.classList.add('text-green-600');
+                }
+                const imgElem = uploadItemDiv.querySelector('img');
+                if (imgElem) {
+                    imgElem.src = downloadURL;
+                    imgElem.alt = fileNameWithoutExt;
+                }
+                setTimeout(() => {
+                    if (uploadItemDiv.parentNode) {
+                        uploadItemDiv.parentNode.removeChild(uploadItemDiv);
+                    }
+                }, 3000);
+            } catch (error) {
+                console.error('Error uploading file:', file.name, error);
+                const statusElem = document.getElementById(`${uploadItemId}-status`);
+                if (statusElem) {
+                    statusElem.textContent = `Upload failed for ${file.name}.`;
+                    statusElem.classList.remove('text-gray-500');
+                    statusElem.classList.add('text-red-600');
+                }
+                showMessageBox(`Failed to upload ${file.name}. Please try again.`);
+            }
+        }
+        customFileUploadInput.value = '';
+    }
+
+    function generateProofAndShowModal() {
+        const customerName = customerNameInput.value.trim();
+        const customerEmail = customerEmailInput.value.trim();
+        const customerNotes = customerNotesInput.value.trim();
+
+        if (currentOrder.length === 0) {
+            showMessageBox('Your order is empty. Please add some items before confirming.');
+            return;
         }
 
+        if (!customerName || !customerEmail) {
+            showMessageBox('Please enter your Name and Email to confirm your order.');
+            return;
+        }
 
-        /**
-         * Generates parameters object for EmailJS, including formatted data.
-         * This function centralizes parameter generation.
-         * @param {string} type 'customer' or 'admin'
-         * @param {string} orderId The Firestore document ID for the order (for admin email).
-         * @param {string|null} zipDownloadUrl The URL to download all custom PNGs, or null.
-         * @returns {object} Parameters object for EmailJS.
-         */
-        function generateTemplateParams(type, orderId = 'N/A', zipDownloadUrl = null) {
-            const customerName = customerNameInput.value.trim();
-            const customerEmail = customerEmailInput.value.trim();
-            const customerNotes = customerNotesInput.value.trim();
-            const orderDate = new Date().toLocaleString();
+        let proofHtml = ``;
+        if (customerNotes) {
+            proofHtml += `<p class="text-gray-700 mb-3"><strong>Notes:</strong> ${customerNotes}</p>`;
+        }
 
-            const orderDetailsCleaned = currentOrder.map(item => ({
+        proofHtml += `<div class="flex flex-wrap justify-center gap-4">`;
+        currentOrder.forEach(item => {
+            const quantityDisplay = (item.sku === ENVELOPE_SKU) ? `${item.quantity} (in 1,000s)` : item.quantity;
+            const packingDetailsDisplay = item.packing_details ? `<br><span class="text-xs text-gray-500">Packing: ${item.packing_details}</span>` : '';
+
+            proofHtml += `
+                <div class="proof-item">
+                    <img src="${item.imageUrl}" alt="${item.title}" onerror="this.onerror=null;this.src='https://placehold.co/50x50/CCCCCC/000000?text=No+Image';" class="proof-item-img">
+                    <p class="text-xs text-gray-600 mt-1">${item.sku}</p>
+                    <div class="proof-item-details">
+                        <p class="font-medium text-gray-800">${item.title}</p>
+                        <p class="text-sm text-gray-600">Qty: ${quantityDisplay}${packingDetailsDisplay}</p>
+                    </div>
+                </div>
+            `;
+        });
+        proofHtml += `</div>`;
+
+        proofContent.innerHTML = proofHtml;
+        proofModal.classList.remove('hidden');
+    }
+
+    function generateAdminOrderTableHtml(orderItems) {
+        let tableRowsHtml = '';
+        orderItems.forEach(item => {
+            const quantityDisplay = (item.sku === ENVELOPE_SKU) ? `${item.quantity} (in 1,000s)` : item.quantity;
+            const packingDetailsDisplay = item.packing_details ? `<br><span style="font-size: 0.75em; color: #666;">Packing: ${item.packing_details}</span>` : '';
+
+            tableRowsHtml += `
+                <tr style="vertical-align: top;">
+                    <td style="padding: 8px; border: 1px solid #ddd; text-align: center;">
+                        <img src="${item.imageUrl}" alt="${item.title}" style="max-width:/GeO6G0px; max-height: 60px; object-fit: contain; border-radius: 4px; border: 1px solid #e2e8f0; box-shadow: 0 1px 2px rgba(0,0,0,0.1); display: block; margin: 0 auto;" onerror="this.onerror=null;this.src='https://placehold.co/60x60/CCCCCC/000000?text=No+Image';">
+                    </td>
+                    <td style="padding: 8px; border: 1px solid #ddd;">${item.sku}</td>
+                    <td style="padding: 8px; border: 1px solid #ddd;">${item.title}${packingDetailsDisplay}</td>
+                    <td style="padding: 8px; border: 1px solid #ddd; text-align: right;">${quantityDisplay}</td>
+                </tr>
+            `;
+        });
+        return `
+            <table style="width: 100%; border-collapse: collapse; border: 1px solid #ddd; margin-top: 15px;">
+                <thead>
+                    <tr style="background-color: #f2f2f2;">
+                        <th style="padding: 8px; border: 1px solid #ddd; text-align: center; width: 100px;">Image</th>
+                        <th style="padding: 8px; border: 1px solid #ddd; text-align: left;">SKU</th>
+                        <th style="padding: 8px; border: 1px solid #ddd; text-align: left;">Item</th>
+                        <th style="padding: 8px; border: 1px solid #ddd; text-align: right; width: 80px;">Quantity</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    ${tableRowsHtml}
+                </tbody>
+            </table>
+        `;
+    }
+
+    function generateTemplateParams(type, orderId = 'N/A') {
+        const customerName = customerNameInput.value.trim();
+        const customerEmail = customerEmailInput.value.trim();
+        const customerNotes = customerNotesInput.value.trim();
+        const orderDate = new Date().toLocaleString();
+
+        const orderDetailsCleaned = currentOrder.map(item => ({
+            id: item.id || '',
+            title: item.title || '',
+            sku: item.sku || '',
+            quantity: item.quantity || 0,
+            imageUrl: item.imageUrl || 'https://placehold.co/64x64/CCCCCC/000000?text=No+Image',
+            quantity_display: (item.sku === ENVELOPE_SKU) ? `${item.quantity} (in 1,000s)` : `${item.quantity}`,
+            packing_details: item.packing_details || ''
+        }));
+
+        let totalQuantityNonGlow = 0;
+        let totalQuantityGlow = 0;
+        let totalQuantityEnvelope = 0;
+        currentOrder.forEach(item => {
+            if (item.sku === ENVELOPE_SKU) {
+                totalQuantityEnvelope += item.quantity;
+            } else if (item.title.toLowerCase().includes('glow in the dark') || item.sku.toLowerCase().includes('glow in the dark') || item.sku.toLowerCase().includes('gitd')) {
+                totalQuantityGlow += item.quantity;
+            } else {
+                totalQuantityNonGlow += item.quantity;
+            }
+        });
+
+        const totals = {
+            total_nonglow: new Intl.NumberFormat('en-US').format(totalQuantityNonGlow),
+            total_glow: new Intl.NumberFormat('en-US').format(totalQuantityGlow),
+            total_envelope: new Intl.NumberFormat('en-US').format(totalQuantityEnvelope * 1000)
+        };
+
+        if (type === 'customer') {
+            return {
+                customer_name: customerName,
+                customer_email: customerEmail,
+                customer_notes: customerNotes,
+                order_items: orderDetailsCleaned,
+                order_date: orderDate,
+                total_nonglow: totals.total_nonglow,
+                total_glow: totals.total_glow,
+                total_envelope: totals.total_envelope,
+                raw_notes: customerNotes ? customerNotes : ''
+            };
+        } else if (type === 'admin') {
+            const orderDetailsTableHtml = generateAdminOrderTableHtml(orderDetailsCleaned);
+            return {
+                customer_name: customerName,
+                customer_email: customerEmail,
+                customer_notes: customerNotes,
+                order_id: orderId,
+                order_date: orderDate,
+                admin_email: ADMIN_PROOF_EMAIL,
+                total_nonglow: totals.total_nonglow,
+                total_glow: totals.total_glow,
+                total_envelope: totals.total_envelope,
+                raw_notes: customerNotes ? customerNotes : '',
+                order_details_table_html: orderDetailsTableHtml
+            };
+        }
+        return {};
+    }
+
+    async function sendEmailWithRetry(serviceId, templateId, params, userId, maxRetries = 3, delayMs = 1000) {
+        for (let attempt = 1; attempt <= maxRetries; attempt++) {
+            try {
+                const response = await emailjs.send(serviceId, templateId, params, userId);
+                console.log(`Email sent successfully on attempt ${attempt}:`, templateId);
+                return { success: true, response };
+            } catch (error) {
+                console.error(`Email attempt ${attempt} failed for ${templateId}:`, error);
+                if (attempt === maxRetries) {
+                    return { success: false, error };
+                }
+                await new Promise(resolve => setTimeout(resolve, delayMs));
+            }
+        }
+        return { success: false, error: new Error('Max retries reached') };
+    }
+
+    async function logEmailFailureToFirestore(orderId, type, error) {
+        try {
+            await addDoc(collection(db, `artifacts/${appId}/email_errors`), {
+                order_id: orderId,
+                type: type,
+                error: error.message || error.toString(),
+                timestamp: serverTimestamp(),
+                customer_email: customerEmailInput.value.trim()
+            });
+            console.log(`Logged ${type} email failure to Firestore for order ${orderId}`);
+        } catch (firestoreError) {
+            console.error('Failed to log email error to Firestore:', firestoreError);
+        }
+    }
+
+    async function handleSubmitOrder() {
+        const customerName = customerNameInput.value.trim();
+        const customerEmail = customerEmailInput.value.trim();
+        const customerNotes = customerNotesInput.value.trim();
+
+        if (currentOrder.length === 0) {
+            showMessageBox('Your order is empty. Please add some items before submitting.');
+            return;
+        }
+
+        if (!customerName || !customerEmail) {
+            showMessageBox('Please enter your Name and Email to submit the order.');
+            return;
+        }
+
+        const orderPayloadFirestore = {
+            customer_name: customerName,
+            customer_email: customerEmail,
+            customer_notes: customerNotes,
+            order_details: currentOrder.map(item => ({
                 id: item.id || '',
                 title: item.title || '',
                 sku: item.sku || '',
                 quantity: item.quantity || 0,
                 imageUrl: item.imageUrl || 'https://placehold.co/64x64/CCCCCC/000000?text=No+Image',
-                quantity_display: (item.sku === ENVELOPE_SKU) ? `${item.quantity} (in 1,000s)` : `${item.quantity}`, // Add a display formatted quantity
-                packing_details: item.packing_details || '' // Include packing details
-            }));
+                packing_details: item.packing_details || ''
+            })),
+            timestamp: serverTimestamp()
+        };
 
-            // Calculate totals
-            let totalQuantityNonGlow = 0;
-            let totalQuantityGlow = 0;
-            let totalQuantityEnvelope = 0;
-            currentOrder.forEach(item => {
-                if (item.sku === ENVELOPE_SKU) {
-                    totalQuantityEnvelope += item.quantity;
-                } else if (item.title.toLowerCase().includes('glow in the dark') || item.sku.toLowerCase().includes('glow in the dark') || item.sku.toLowerCase().includes('gitd')) {
-                    totalQuantityGlow += item.quantity;
-                } else {
-                    totalQuantityNonGlow += item.quantity;
-                }
-            });
-            
-            const totals = {
-                total_nonglow: new Intl.NumberFormat('en-US').format(totalQuantityNonGlow),
-                total_glow: new Intl.NumberFormat('en-US').format(totalQuantityGlow),
-                total_envelope: new Intl.NumberFormat('en-US').format(totalQuantityEnvelope * 1000)
-            };
+        approveProofBtn.disabled = true;
+        reviseOrderBtn.disabled = true;
+        generateProofBtn.disabled = true;
+        submitOrderButton.disabled = true;
+        submitOrderButton.textContent = 'Submitting...';
+        showMessageBox('Submitting your order...');
 
-
-            if (type === 'customer') {
-                // For customer template, still send order_items array for Mustache.js loop
-                return {
-                    customer_name: customerName,
-                    customer_email: customerEmail,
-                    customer_notes: customerNotes,
-                    order_items: orderDetailsCleaned, 
-                    order_date: orderDate, 
-                    total_nonglow: totals.total_nonglow,
-                    total_glow: totals.total_glow,
-                    total_envelope: totals.total_envelope,
-                    raw_notes: customerNotes ? customerNotes : '' 
-                };
-            } else if (type === 'admin') {
-                // For admin template, generate the HTML table here
-                const orderDetailsTableHtml = generateAdminOrderTableHtml(orderDetailsCleaned);
-
-                return {
-                    customer_name: customerName,
-                    customer_email: customerEmail,
-                    customer_notes: customerNotes,
-                    order_id: orderId,
-                    order_date: orderDate, 
-                    admin_email: ADMIN_PROOF_EMAIL,
-                    zip_download_url: zipDownloadUrl, 
-                    total_nonglow: totals.total_nonglow,
-                    total_glow: totals.total_glow,
-                    total_envelope: totals.total_envelope,
-                    raw_notes: customerNotes ? customerNotes : '',
-                    order_details_table_html: orderDetailsTableHtml // NEW: Pass the pre-rendered HTML table
-                };
+        try {
+            let orderDocRef;
+            if (currentUserId) {
+                orderDocRef = await addDoc(collection(db, `artifacts/${appId}/users/${currentUserId}/orders`), orderPayloadFirestore);
+                console.log('Order saved to Firestore successfully! ID:', orderDocRef.id);
+            } else {
+                console.warn('User not authenticated, skipping Firestore save.');
             }
-            return {};
+
+            const orderId = orderDocRef ? orderDocRef.id : 'N/A';
+            const customerTemplateParams = generateTemplateParams('customer', orderId);
+            const adminTemplateParams = generateTemplateParams('admin', orderId);
+
+            console.log('Customer email params:', customerTemplateParams);
+            console.log('Admin email params:', adminTemplateParams);
+
+            let customerEmailSuccess = false;
+            let adminEmailSuccess = false;
+
+            const customerEmailResult = await sendEmailWithRetry(
+                EMAILJS_SERVICE_ID,
+                EMAILJS_TEMPLATE_ID_CUSTOMER,
+                customerTemplateParams,
+                EMAILJS_USER_ID
+            );
+
+            if (customerEmailResult.success) {
+                console.log('Customer email sent successfully!');
+                customerEmailSuccess = true;
+            } else {
+                console.error('Customer email failed:', customerEmailResult.error);
+                await logEmailFailureToFirestore(orderId, 'customer', customerEmailResult.error);
+                showMessageBox(`Order submitted, but failed to send confirmation email to you: ${customerEmailResult.error.message}`);
+            }
+
+            const adminEmailResult = await sendEmailWithRetry(
+                EMAILJS_SERVICE_ID,
+                EMAILJS_TEMPLATE_ID_ADMIN,
+                adminTemplateParams,
+                EMAILJS_USER_ID
+            );
+
+            if (adminEmailResult.success) {
+                console.log('Admin proof email sent successfully!');
+                adminEmailSuccess = true;
+            } else {
+                console.error('Admin email failed:', adminEmailResult.error);
+                await logEmailFailureToFirestore(orderId, 'admin', adminEmailResult.error);
+                showMessageBox(`Order submitted, but failed to send confirmation to admin: ${adminEmailResult.error.message}`);
+            }
+
+            if (customerEmailSuccess && adminEmailSuccess) {
+                showMessageBox('Order submitted successfully! You will receive a confirmation email shortly.');
+            } else if (customerEmailSuccess) {
+                showMessageBox('Order submitted successfully! You will receive a confirmation email shortly, but admin email failed.');
+            } else if (adminEmailSuccess) {
+                showMessageBox('Order submitted successfully! Confirmation email to you failed, but admin received proof.');
+            } else {
+                showMessageBox('Order submitted, but both confirmation emails failed to send. Please contact support.');
+            }
+
+            currentOrder = [];
+            renderOrderList();
+            customerNotesInput.value = '';
+            proofModal.classList.add('hidden');
+            customUploadList.innerHTML = '';
+
+        } catch (error) {
+            console.error('Error submitting order:', error);
+            showMessageBox(`An error occurred while submitting your order: ${error.message}. Please try again.`);
+        } finally {
+            approveProofBtn.disabled = false;
+            reviseOrderBtn.disabled = false;
+            generateProofBtn.disabled = false;
+            submitOrderButton.disabled = false;
+            submitOrderButton.textContent = 'Submit Order';
+        }
+    }
+
+    function listenForOrderHistory() {
+        if (!currentUserId) {
+            console.warn('Cannot listen for order history: User not authenticated.');
+            return;
         }
 
-        /**
-         * Handles the order submission. Sends order data using EmailJS and saves to Firestore.
-         */
-        async function handleSubmitOrder() {
-            const customerName = customerNameInput.value.trim();
-            const customerEmail = customerEmailInput.value.trim(); // This will now be pre-filled from auth
-            const customerNotes = customerNotesInput.value.trim();
+        const ordersCollectionRef = collection(db, `artifacts/${appId}/users/${currentUserId}/orders`);
+        const q = query(ordersCollectionRef);
 
-            if (currentOrder.length === 0) {
-                showMessageBox('Your order is empty. Please add some items before submitting.');
-                return;
-            }
-
-            if (!customerName || !customerEmail) {
-                showMessageBox('Please enter your Name and Email to submit the order.');
-                return;
-            }
-
-            // Prepare payload for Firestore (same as before)
-            const orderPayloadFirestore = {
-                customer_name: customerName,
-                customer_email: customerEmail,
-                customer_notes: customerNotes,
-                order_details: currentOrder.map(item => ({ // Deep copy for Firestore
-                    id: item.id || '',
-                    title: item.title || '',
-                    sku: item.sku || '',
-                    quantity: item.quantity || 0,
-                    imageUrl: item.imageUrl || 'https://placehold.co/64x64/CCCCCC/000000?text=No+Image',
-                    packing_details: item.packing_details || '' // Include packing details for Firestore
-                }))
-            };
-
-            // Disable buttons to prevent multiple submissions
-            approveProofBtn.disabled = true;
-            reviseOrderBtn.disabled = true;
-            generateProofBtn.disabled = true; 
-            submitOrderButton.disabled = true;
-            submitOrderButton.textContent = 'Submitting...';
-
-            try {
-                // 1. Save order to Firestore FIRST to get the ID
-                let orderDocRef;
-                if (currentUserId) {
-                    orderDocRef = await addDoc(collection(db, `artifacts/${appId}/users/${currentUserId}/orders`), orderPayloadFirestore);
-                    console.log('Order saved to Firestore successfully! ID:', orderDocRef.id);
-                } else {
-                    console.warn('User not authenticated, skipping Firestore save.');
-                }
-
-                const orderId = orderDocRef ? orderDocRef.id : 'N/A';
-                let zipDownloadUrl = null; // Initialize zipDownloadUrl
-
-                // 2. Identify custom uploads and call Cloud Function to zip them
-                const customUploadImageUrls = currentOrder
-                    .filter(item => item.sku === 'CUSTOM_UPLOAD' && item.imageUrl)
-                    .map(item => item.imageUrl);
-
-                if (customUploadImageUrls.length > 0) {
-                    showMessageBox('Processing custom uploads for download...');
-                    try {
-                        const zipFunctionResponse = await fetch(ZIP_CLOUD_FUNCTION_URL, {
-                            method: 'POST',
-                            headers: {
-                                'Content-Type': 'application/json',
-                            },
-                            body: JSON.stringify({
-                                orderId: orderId,
-                                customerEmail: customerEmail,
-                                imageUrls: customUploadImageUrls,
-                                bucketName: firebaseConfig.storageBucket // Pass the correct bucket name
-                            }),
-                        });
-
-                        if (!zipFunctionResponse.ok) {
-                            const errorText = await zipFunctionResponse.text();
-                            throw new Error(`Cloud Function error: ${zipFunctionResponse.status} - ${errorText}`);
-                        }
-
-                        const zipResult = await zipFunctionResponse.json();
-                        zipDownloadUrl = zipResult.downloadUrl;
-                        console.log('ZIP download URL from Cloud Function:', zipDownloadUrl);
-                        hideMessageBox(); // Hide processing message
-                    } catch (zipError) {
-                        console.error('Error calling Cloud Function to zip images:', zipError);
-                        showMessageBox(`Warning: Could not generate "Download All PNGs" link. Error: ${zipError.message}`);
-                        // Continue with order submission even if zip fails
-                    }
-                }
-
-                // 3. Generate parameters for customer and admin emails, including zipDownloadUrl
-                const customerTemplateParams = generateTemplateParams('customer', orderId);
-                const adminTemplateParams = generateTemplateParams('admin', orderId, zipDownloadUrl); // Pass zipDownloadUrl here
-
-                console.log('Sending customer email with parameters:', customerTemplateParams);
-                console.log('Sending admin email with parameters:', adminTemplateParams);
-
-                // 4. Send emails via EmailJS
-                let customerEmailSuccess = false;
-                let adminEmailSuccess = false;
-
-                try {
-                    await emailjs.send(EMAILJS_SERVICE_ID, EMAILJS_TEMPLATE_ID_CUSTOMER_RECAP, customerTemplateParams, EMAILJS_USER_ID);
-                    console.log('Customer email sent successfully via EmailJS!');
-                    customerEmailSuccess = true;
-                } catch (emailError) {
-                    console.error('Failed to send customer email via EmailJS:', emailError);
-                    showMessageBox(`Order submitted, but failed to send confirmation email to you. Error: ${emailError.text || emailError}`);
-                }
-
-                try {
-                    await emailjs.send(EMAILJS_SERVICE_ID, EMAILJS_TEMPLATE_ID_ADMIN, adminTemplateParams, EMAILJS_USER_ID);
-                    console.log('Admin proof email sent successfully via EmailJS!');
-                    adminEmailSuccess = true;
-                } catch (emailError) {
-                    console.error('Failed to send admin proof email via EmailJS:', emailError);
-                    showMessageBox(`Order submitted, but failed to send confirmation to admin. Error: ${emailError.text || emailError}`);
-                }
-
-                if (customerEmailSuccess && adminEmailSuccess) {
-                    showMessageBox('Order submitted successfully! You will receive a confirmation email shortly.');
-                } else if (customerEmailSuccess) {
-                    showMessageBox('Order submitted successfully! You will receive a confirmation email shortly. Admin email failed to send.');
-                } else if (adminEmailSuccess) {
-                    showMessageBox('Order submitted successfully! Confirmation email to you failed, but admin received proof.');
-                } else {
-                     showMessageBox('Order submitted, but both confirmation emails failed to send. Please contact support.');
-                }
-
-                currentOrder = []; 
-                renderOrderList(); 
-                customerNotesInput.value = ''; 
-                proofModal.classList.add('hidden');
-                customUploadList.innerHTML = ''; // Clear custom upload list display
-
-            } catch (error) {
-                console.error('Error submitting order or saving to Firestore:', error);
-                showMessageBox('An error occurred while submitting your order. Please check your internet connection and try again.');
-            } finally {
-                approveProofBtn.disabled = false;
-                reviseOrderBtn.disabled = false;
-                generateProofBtn.disabled = false; 
-                submitOrderButton.disabled = false;
-                submitOrderButton.textContent = 'Submit Order';
-            }
-        }
-
-        /**
-         * Listens for real-time updates to the user's order history from Firestore.
-         */
-        function listenForOrderHistory() {
-            if (!currentUserId) {
-                console.warn('Cannot listen for order history: User not authenticated.');
-                return;
-            }
-
-            const ordersCollectionRef = collection(db, `artifacts/${appId}/users/${currentUserId}/orders`);
-            const q = query(ordersCollectionRef); // No orderBy to avoid index issues
-
-            onSnapshot(q, (snapshot) => {
-                const orders = [];
-                snapshot.forEach(doc => {
-                    orders.push({ id: doc.id, ...doc.data() });
-                });
-                renderOrderHistory(orders);
-            }, (error) => {
-                console.error('Error listening to order history:', error);
-                showMessageBox('Error loading order history. Please try refreshing the page.');
+        onSnapshot(q, (snapshot) => {
+            const orders = [];
+            snapshot.forEach(doc => {
+                orders.push({ id: doc.id, ...doc.data() });
             });
-        }
-
-        // --- INITIALIZATION ---
-        document.addEventListener('DOMContentLoaded', () => {
-            attachEventListeners();
-            renderOrderList(); // Initial render of an empty order list
-
-            // Initialize EmailJS with your Public Key
-            emailjs.init(EMAILJS_USER_ID);
-
-            // Initialize Firebase instances using the provided config
-            app = initializeApp(firebaseConfig); 
-            auth = getAuth(app);
-            db = getFirestore(app);
-            storage = getStorage(app); // Initialize Firebase Storage
-
-            onAuthStateChanged(auth, async (user) => {
-                if (user) {
-                    currentUserId = user.uid; 
-                    currentUserEmail = user.email; 
-                    
-                    // Fetch user's name from Firestore
-                    const userProfileDocRef = doc(db, `artifacts/${appId}/users_profile`, currentUserId);
-                    const userProfileSnap = await getDoc(userProfileDocRef);
-                    if (userProfileSnap.exists()) {
-                        currentUserName = userProfileSnap.data().name;
-                    } else {
-                        currentUserName = currentUserEmail; 
-                        console.warn('User profile not found for UID:', currentUserId, 'Falling back to email for display.');
-                    }
-
-                    currentUserNameSpan.textContent = currentUserName || 'Anonymous User'; 
-                    userIdDisplay.classList.remove('hidden');
-                    
-                    mainContainer.style.display = 'flex'; 
-                    mainContainer.classList.remove('hidden'); 
-                    
-                    authOverlay.style.display = 'none'; 
-                    authOverlay.classList.add('hidden'); 
-
-                    customerEmailInput.value = currentUserEmail || ''; 
-                    customerNameInput.value = currentUserName || '';
-
-                    console.log('Firebase authenticated. User ID:', currentUserId, 'Email:', currentUserEmail, 'Name:', currentUserName);
-                    listenForOrderHistory(); 
-                    fetchProductCatalog(); 
-                } else {
-                    console.log('No Firebase user signed in. Showing authentication prompt.');
-                    currentUserId = null; 
-                    currentUserEmail = null; 
-                    currentUserName = null; 
-                    userIdDisplay.classList.add('hidden');
-                    
-                    mainContainer.style.display = 'none'; 
-                    mainContainer.classList.add('hidden'); 
-                    
-                    authOverlay.style.display = 'flex'; 
-                    authOverlay.classList.remove('hidden'); 
-                    
-                    authNameInput.classList.add('hidden'); 
-                    authNameInput.style.display = 'none'; 
-                    isLoginMode = true; 
-                    authTitle.textContent = 'Login to Access Portal';
-                    authSubmitButton.textContent = 'Login';
-                    toggleAuthModeText.textContent = "Don't have an account?";
-                    toggleAuthMode.textContent = 'Sign Up';
-
-                    customerNameInput.value = '';
-                    customerEmailInput.value = '';
-                    currentOrder = []; 
-                    renderOrderList(); 
-                    orderHistoryListDesktop.innerHTML = '<div class="p-4 text-gray-500 text-center" id="emptyOrderHistoryMessageDesktop">No past orders found.</div>';
-                    orderHistoryListMobile.innerHTML = '<div class="p-4 text-gray-500 text-center" id="emptyOrderHistoryMessageMobile">No past orders found.</div>';
-                }
-            });
+            renderOrderHistory(orders);
+        }, (error) => {
+            console.error('Error listening to order history:', error);
+            showMessageBox('Error loading order history. Please try refreshing the page.');
         });
-    </script>
+    }
+
+    // --- INITIALIZATION ---
+    document.addEventListener('DOMContentLoaded', () => {
+        attachEventListeners();
+        renderOrderList();
+
+        emailjs.init(EMAILJS_USER_ID);
+
+        app = initializeApp(firebaseConfig);
+        auth = getAuth(app);
+        db = getFirestore(app);
+        storage = getStorage(app);
+
+        onAuthStateChanged(auth, async (user) => {
+            if (user) {
+                currentUserId = user.uid;
+                currentUserEmail = user.email;
+
+                const userProfileDocRef = doc(db, `artifacts/${appId}/users_profile`, currentUserId);
+                const userProfileSnap = await getDoc(userProfileDocRef);
+                if (userProfileSnap.exists()) {
+                    currentUserName = userProfileSnap.data().name;
+                } else {
+                    currentUserName = currentUserEmail;
+                    console.warn('User profile not found for UID:', currentUserId);
+                }
+
+                currentUserNameSpan.textContent = currentUserName || 'Anonymous User';
+                userIdDisplay.classList.remove('hidden');
+
+                mainContainer.style.display = 'flex';
+                mainContainer.classList.remove('hidden');
+
+                authOverlay.style.display = 'none';
+                authOverlay.classList.add('hidden');
+
+                customerEmailInput.value = currentUserEmail || '';
+                customerNameInput.value = currentUserName || '';
+
+                console.log('Firebase authenticated. User ID:', currentUserId, 'Email:', currentUserEmail, 'Name:', currentUserName);
+                listenForOrderHistory();
+                fetchProductCatalog();
+            } else {
+                console.log('No Firebase user signed in.');
+                currentUserId = null;
+                currentUserEmail = null;
+                currentUserName = null;
+                userIdDisplay.classList.add('hidden');
+
+                mainContainer.style.display = 'none';
+                mainContainer.classList.add('hidden');
+
+                authOverlay.style.display = 'flex';
+                authOverlay.classList.remove('hidden');
+
+                authNameInput.classList.add('hidden');
+                authNameInput.style.display = 'none';
+                isLoginMode = true;
+                authTitle.textContent = 'Login to Access Portal';
+                authSubmitButton.textContent = 'Login';
+                toggleAuthModeText.textContent = "Don't have an account?";
+                toggleAuthMode.textContent = 'Sign Up';
+
+                customerNameInput.value = '';
+                customerEmailInput.value = '';
+                currentOrder = [];
+                renderOrderList();
+                orderHistoryListDesktop.innerHTML = '<div class="p-4 text-gray-500 text-center" id="emptyOrderHistoryMessageDesktop">No past orders found.</div>';
+                orderHistoryListMobile.innerHTML = '<div class="p-4 text-gray-500 text-center" id="emptyOrderHistoryMessageMobile">No past orders found.</div>';
+            }
+        });
+    });
+</script>
 </body>
 </html>
