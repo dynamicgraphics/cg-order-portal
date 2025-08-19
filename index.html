@@ -1286,38 +1286,38 @@
     }
 
     function generateAdminOrderTableHtml(orderItems) {
-        let tableRowsHtml = '';
-        orderItems.forEach(item => {
-            const quantityDisplay = (item.sku === ENVELOPE_SKU) ? `${item.quantity} (in 1,000s)` : item.quantity;
-            const packingDetailsDisplay = item.packing_details ? `<br><span style="font-size: 0.75em; color: #666;">Packing: ${item.packing_details}</span>` : '';
+    let tableRowsHtml = '';
+    orderItems.forEach(item => {
+        const quantityDisplay = (item.sku === ENVELOPE_SKU) ? `${item.quantity} (in 1,000s)` : item.quantity;
+        const packingDetailsDisplay = item.packing_details ? `<br><span style="font-size: 0.75em; color: #666;">Packing: ${item.packing_details}</span>` : '';
 
-            tableRowsHtml += `
-                <tr style="vertical-align: top;">
-                    <td style="padding: 8px; border: 1px solid #ddd; text-align: center;">
-                        <img src="${item.imageUrl}" alt="${item.title}" style="max-width:/GeO6G0px; max-height: 60px; object-fit: contain; border-radius: 4px; border: 1px solid #e2e8f0; box-shadow: 0 1px 2px rgba(0,0,0,0.1); display: block; margin: 0 auto;" onerror="this.onerror=null;this.src='https://placehold.co/60x60/CCCCCC/000000?text=No+Image';">
-                    </td>
-                    <td style="padding: 8px; border: 1px solid #ddd;">${item.sku}</td>
-                    <td style="padding: 8px; border: 1px solid #ddd;">${item.title}${packingDetailsDisplay}</td>
-                    <td style="padding: 8px; border: 1px solid #ddd; text-align: right;">${quantityDisplay}</td>
-                </tr>
-            `;
-        });
-        return `
-            <table style="width: 100%; border-collapse: collapse; border: 1px solid #ddd; margin-top: 15px;">
-                <thead>
-                    <tr style="background-color: #f2f2f2;">
-                        <th style="padding: 8px; border: 1px solid #ddd; text-align: center; width: 100px;">Image</th>
-                        <th style="padding: 8px; border: 1px solid #ddd; text-align: left;">SKU</th>
-                        <th style="padding: 8px; border: 1px solid #ddd; text-align: left;">Item</th>
-                        <th style="padding: 8px; border: 1px solid #ddd; text-align: right; width: 80px;">Quantity</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    ${tableRowsHtml}
-                </tbody>
-            </table>
+        tableRowsHtml += `
+            <tr style="vertical-align: top;">
+                <td style="padding: 8px; border: 1px solid #ddd; text-align: center;">
+                    <img src="${item.imageUrl}" alt="${item.title}" style="max-width: 60px; max-height: 60px; object-fit: contain; border-radius: 4px; border: 1px solid #e2e8f0; box-shadow: 0 1px 2px rgba(0,0,0,0.1); display: block; margin: 0 auto;" onerror="this.onerror=null;this.src='https://placehold.co/60x60/CCCCCC/000000?text=No+Image';">
+                </td>
+                <td style="padding: 8px; border: 1px solid #ddd;">${item.sku}</td>
+                <td style="padding: 8px; border: 1px solid #ddd;">${item.title}${packingDetailsDisplay}</td>
+                <td style="padding: 8px; border: 1px solid #ddd; text-align: right;">${quantityDisplay}</td>
+            </tr>
         `;
-    }
+    });
+    return `
+        <table style="width: 100%; border-collapse: collapse; border: 1px solid #ddd; margin-top: 15px;">
+            <thead>
+                <tr style="background-color: #f2f2f2;">
+                    <th style="padding: 8px; border: 1px solid #ddd; text-align: center; width: 100px;">Image</th>
+                    <th style="padding: 8px; border: 1px solid #ddd; text-align: left;">SKU</th>
+                    <th style="padding: 8px; border: 1px solid #ddd; text-align: left;">Item</th>
+                    <th style="padding: 8px; border: 1px solid #ddd; text-align: right; width: 80px;">Quantity</th>
+                </tr>
+            </thead>
+            <tbody>
+                ${tableRowsHtml}
+            </tbody>
+        </table>
+    `;
+}
 
     function generateTemplateParams(type, orderId = 'N/A') {
         const customerName = customerNameInput.value.trim();
