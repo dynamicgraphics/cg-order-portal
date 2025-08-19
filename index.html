@@ -1140,18 +1140,42 @@
             authError.classList.add('hidden');
 
             try {
-                if (isLoginMode) {
-                    await signInWithEmailAndPassword(auth, email, password);
-                } else {
-                    const userCredential = await createUserWithEmailAndPassword(auth, email, password);
-                    const user = userCredential.user;
-                    // Save user profile to Firestore
-                    await setDoc(doc(db, `artifacts/${appId}/users_profile`, user.uid), {
-                        name: name,
-                        email: email,
-                        createdAt: serverTimestamp()
-                    });
-                }
+    if (isLoginMode) {
+        // Sign in with email and password
+        const userCredential = await signInWithEmailAndPassword(auth, email, password);
+        const user = userCredential.user;
+
+        // Add a document or update the existing one with a merge,
+        // so it doesn't overwrite any other data.
+        await setDoc(doc(db, `artifacts/${appId}/users_profile`, user.uid), {
+            name: user.displayName || email, // Use display name if available, otherwise use email
+            email: email,
+        }, { merge: true });
+
+    } else {
+        // Create a new user with email and password
+        const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+        const user = userCredential.user;
+
+        // Save user profile to Firestore on creation
+        await setDoc(doc(db, `artifacts/${appId}/users_profile`, user.uid), {
+            name: name,
+            email: email,
+            createdAt: serverTimestamp()
+        });
+    }
+
+    // After a successful login or sign-up
+    console.log("Authentication successful, user is now logged in.");
+    hideAuthPrompt();
+    showMainContent();
+    loadProductCatalog();
+
+} catch (error) {
+    // This is a catch block for any authentication errors
+    console.error("Authentication failed:", error.message);
+    showMessage(`Authentication failed: ${error.message}`);
+}
                 // Rely on onAuthStateChanged to handle UI transition and message boxes
             } catch (error) {
                 let errorMessage = 'An unknown error occurred.';
