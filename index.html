@@ -1139,7 +1139,7 @@
             authSubmitButton.disabled = true;
             authError.classList.add('hidden');
 
-            try {
+ try {
     if (isLoginMode) {
         // Sign in with email and password
         const userCredential = await signInWithEmailAndPassword(auth, email, password);
@@ -1163,13 +1163,7 @@
             email: email,
             createdAt: serverTimestamp()
         });
-    }
-
-    // After a successful login or sign-up
-    console.log("Authentication successful, user is now logged in.");
-    hideAuthPrompt();
-    showMainContent();
-    loadProductCatalog();
+    } // <-- The try block ends here. No code should be between this and the 'catch'
 
 } catch (error) {
     // This is a catch block for any authentication errors
