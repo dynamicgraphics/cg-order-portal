@@ -686,24 +686,6 @@
     const restoreInput = document.createElement('input');
     restoreInput.type = 'file';
     restoreInput.id = 'restoreFileInput';
-    restoreInput.accept = '.json';
-    restoreInput.style.display = 'none';
-    document.body.appendChild(restoreInput);
-    restoreInput.addEventListener('change', handleRestoreBackup);
-
-    // Add "Restore Backup" button to the UI
-    function createRestoreButton() {
-      const searchSection = document.querySelector('.bg-blue-50');
-      if (searchSection && !document.getElementById('restoreBtnForSearch')) {
-        const restoreBtn = document.createElement('button');
-        restoreBtn.id = 'restoreBtnForSearch';
-        restoreBtn.textContent = '📂 Restore Cart Backup';
-        restoreBtn.className = 'mt-2 text-sm text-blue-600 underline hover:text-blue-800 cursor-pointer block text-center w-full';
-        restoreBtn.onclick = () => restoreInput.click();
-        searchSection.appendChild(restoreBtn);
-      }
-    }
-
 
     // --- UTILITY FUNCTIONS ---
 
@@ -1008,7 +990,7 @@
         customFileUploadInput.value = '';
         customQuantityInput.value = '2000';
         // REMOVED POPUP for upload success too? 
-        // "There needs to be no confirmation pop up ... once they select an item to the order"
+        // "There needs to be no confirmation pop up ... once they select an item to the order."
         // Custom upload is technically "selecting an item", but it takes time. 
         // I'll leave a small message box for upload success as it's an async process and confirmation is good, but user might want it gone.
         // Re-reading: "no confirmation pop up ... once they select an item to the order."
@@ -1289,57 +1271,65 @@
       } finally {
         authSubmitButton.disabled = false;
       }
-    }
+      async function loadUserName(userId) {
+        try {
+          const docRef = doc(db, `/artifacts/${appId}/users/${userId}/profile/details`);
+          const docSnap = await getDoc(docRef);
 
-    async function loadUserName(userId) {
-      try {
-        const docRef = doc(db, `/artifacts/${appId}/users/${userId}/profile/details`);
-        const docSnap = await getDoc(docRef);
-        if (docSnap.exists()) {
-          currentUserNameDisplay = docSnap.data().name;
-          currentUserNameSpan.textContent = `${currentUserNameDisplay} (${userId})`;
-          customerNameInput.value = currentUserNameDisplay;
-        } else {
-          currentUserNameDisplay = currentUserEmail;
-          currentUserNameSpan.textContent = `${currentUserEmail} (${userId})`;
-          customerNameInput.value = currentUserEmail;
+          let displayName = '';
+          if (docSnap.exists() && docSnap.data().name) {
+            displayName = docSnap.data().name;
+          } else if (currentUserEmail) {
+            displayName = currentUserEmail.split('@')[0]; // Use part of email before @
+          } else {
+            displayName = `User ${userId.substring(0, 5)}...`;
+          }
+
+          currentUserNameDisplay = displayName;
+          // Format: "Logged in as: John (john@example.com)" or just "John"
+          const displayString = currentUserEmail ? `${displayName} (${currentUserEmail})` : displayName;
+          currentUserNameSpan.textContent = displayString;
+
+          // Pre-fill form if needed
+          if (customerNameInput.value === '') {
+            customerNameInput.value = docSnap.exists() ? docSnap.data().name : '';
+          }
+
+        } catch (e) {
+          console.error("Error loading user name:", e);
+          currentUserNameSpan.textContent = currentUserEmail || 'Guest';
+          customerNameInput.value = currentUserEmail || '';
         }
-      } catch (e) {
-        console.error("Error loading user name:", e);
-        currentUserNameSpan.textContent = `User ${userId}`;
-        customerNameInput.value = currentUserEmail;
       }
-    }
+      function setupOrderHistoryListener(userId) {
+        const q = query(collection(db, ORDERS_COLLECTION_PATH), where("userId", "==", userId));
 
-    function setupOrderHistoryListener(userId) {
-      const q = query(collection(db, ORDERS_COLLECTION_PATH), where("userId", "==", userId));
-
-      onSnapshot(q, (snapshot) => {
-        const orders = [];
-        snapshot.forEach((doc) => {
-          orders.push({ id: doc.id, ...doc.data() });
+        onSnapshot(q, (snapshot) => {
+          const orders = [];
+          snapshot.forEach((doc) => {
+            orders.push({ id: doc.id, ...doc.data() });
+          });
+          renderOrderHistory(orders);
+        }, (error) => {
+          console.error("Error listening to order history:", error);
         });
-        renderOrderHistory(orders);
-      }, (error) => {
-        console.error("Error listening to order history:", error);
-      });
-    }
+      }
 
-    function renderOrderHistory(orders) {
-      const sortedOrders = orders.sort((a, b) => (b.timestamp?.seconds || 0) - (a.timestamp?.seconds || 0));
+      function renderOrderHistory(orders) {
+        const sortedOrders = orders.sort((a, b) => (b.timestamp?.seconds || 0) - (a.timestamp?.seconds || 0));
 
-      const historyHtml = sortedOrders.map(order => {
-        const date = order.timestamp ? new Date(order.timestamp.seconds * 1000).toLocaleString() : 'N/A';
-        const totalItems = order.orderItems.reduce((sum, item) => sum + item.quantity, 0);
+        const historyHtml = sortedOrders.map(order => {
+          const date = order.timestamp ? new Date(order.timestamp.seconds * 1000).toLocaleString() : 'N/A';
+          const totalItems = order.orderItems.reduce((sum, item) => sum + item.quantity, 0);
 
-        const detailsHtml = order.orderItems.map(item => `
+          const detailsHtml = order.orderItems.map(item => `
                     <div class="text-sm border-b last:border-b-0 py-1 flex justify-between">
                         <span class="text-gray-700 font-medium">${item.title}</span>
                         <span class="text-gray-500">${item.quantity.toLocaleString()} x</span>
                     </div>
                 `).join('');
 
-        return `
+          return `
                     <div class="order-history-card">
                         <button class="order-history-header group" data-order-id="${order.id}">
                             <div class="flex flex-col items-start">
@@ -1360,108 +1350,118 @@
                         </div>
                     </div>
                 `;
-      }).join('');
+        }).join('');
 
-      orderHistoryListDesktop.innerHTML = historyHtml;
-      emptyOrderHistoryMessageDesktop.classList.toggle('hidden', sortedOrders.length > 0);
+        orderHistoryListDesktop.innerHTML = historyHtml;
+        emptyOrderHistoryMessageDesktop.classList.toggle('hidden', sortedOrders.length > 0);
 
-      orderHistoryListMobile.innerHTML = historyHtml;
-      emptyOrderHistoryMessageMobile.classList.toggle('hidden', sortedOrders.length > 0);
+        orderHistoryListMobile.innerHTML = historyHtml;
+        emptyOrderHistoryMessageMobile.classList.toggle('hidden', sortedOrders.length > 0);
 
-      [...orderHistoryListDesktop.querySelectorAll('.order-history-header'), ...orderHistoryListMobile.querySelectorAll('.order-history-header')].forEach(header => {
-        header.addEventListener('click', (e) => {
-          const orderId = header.dataset.orderId;
-          const detailsDiv = document.getElementById(`details-${orderId}`);
-          detailsDiv.classList.toggle('hidden');
+        [...orderHistoryListDesktop.querySelectorAll('.order-history-header'), ...orderHistoryListMobile.querySelectorAll('.order-history-header')].forEach(header => {
+          header.addEventListener('click', (e) => {
+            const orderId = header.dataset.orderId;
+            const detailsDiv = document.getElementById(`details-${orderId}`);
+            detailsDiv.classList.toggle('hidden');
+          });
         });
-      });
 
-      [...orderHistoryListDesktop.querySelectorAll('.reorder-btn'), ...orderHistoryListMobile.querySelectorAll('.reorder-btn')].forEach(button => {
-        button.addEventListener('click', (e) => {
-          const orderItemsString = e.target.dataset.orderItems;
-          if (orderItemsString) {
-            try {
-              const orderItems = JSON.parse(orderItemsString);
-              orderItems.forEach(item => {
-                if (!item.isCustom) {
-                  addItem(item, item.quantity);
-                }
-              });
-              saveCartLocally();
-              showMessageBox('Items added to your current order. Custom file designs need to be re-uploaded.');
-              orderHistoryModal.classList.add('hidden');
-            } catch (error) {
-              console.error('Error parsing reorder items:', error);
-              showMessageBox('Could not load reorder items due to a parsing error.');
+        [...orderHistoryListDesktop.querySelectorAll('.reorder-btn'), ...orderHistoryListMobile.querySelectorAll('.reorder-btn')].forEach(button => {
+          button.addEventListener('click', (e) => {
+            const orderItemsString = e.target.dataset.orderItems;
+            if (orderItemsString) {
+              try {
+                const orderItems = JSON.parse(orderItemsString);
+                orderItems.forEach(item => {
+                  if (!item.isCustom) {
+                    addItem(item, item.quantity);
+                  }
+                });
+                saveCartLocally();
+                showMessageBox('Items added to your current order. Custom file designs need to be re-uploaded.');
+                orderHistoryModal.classList.add('hidden');
+              } catch (error) {
+                console.error('Error parsing reorder items:', error);
+                showMessageBox('Could not load reorder items due to a parsing error.');
+              }
             }
-          }
+          });
         });
+      }
+
+
+      // --- INIT ---
+
+      function initFirebase() {
+        try {
+          app = initializeApp(firebaseConfig);
+          db = getFirestore(app);
+          auth = getAuth(app);
+          storage = getStorage(app);
+
+          onAuthStateChanged(auth, (user) => {
+            if (user) {
+              currentUserId = user.uid;
+              currentUserEmail = user.email;
+
+              loadUserName(currentUserId);
+              customerEmailInput.value = currentUserEmail;
+              setupOrderHistoryListener(currentUserId);
+
+              authOverlay.classList.add('hidden');
+              mainContainer.classList.remove('hidden');
+              userIdDisplay.classList.remove('hidden');
+              isAuthReady = true;
+
+              fetchProductCatalog();
+              loadCartLocally();
+
+              // Version Indicator
+              const versionDisplay = document.createElement('div');
+              versionDisplay.className = 'fixed bottom-2 right-2 text-xs text-gray-400 font-mono pointer-events-none z-50';
+              versionDisplay.textContent = 'App Version: v1.1';
+              document.body.appendChild(versionDisplay);
+
+              // Log for debugging permissions
+              console.log("App ID:", appId);
+              console.log("Current Auth User:", currentUserId);
+
+            } else {
+              currentUserId = null;
+              currentUserEmail = null;
+              currentUserNameSpan.textContent = 'N/A';
+              customerEmailInput.value = '';
+              customerNameInput.value = '';
+
+              authOverlay.classList.remove('hidden');
+              mainContainer.classList.add('hidden');
+              userIdDisplay.classList.add('hidden');
+              isAuthReady = true;
+            }
+          });
+
+        } catch (e) {
+          console.error("Firebase Init Error:", e);
+          showMessageBox("Firebase connection failed. Check console for details.");
+        }
+      }
+
+      toggleAuthMode.addEventListener('click', toggleAuthModeHandler);
+      authSubmitButton.addEventListener('click', authSubmitHandler);
+      logoutButton.addEventListener('click', () => signOut(auth));
+
+      floatingOrderHistoryBtn.addEventListener('click', () => orderHistoryModal.classList.remove('hidden'));
+      orderHistoryModalCloseBtn.addEventListener('click', () => orderHistoryModal.classList.add('hidden'));
+
+
+      initFirebase();
+      fetchProductCatalog();
+
+      messageBox.addEventListener('click', (e) => {
+        if (e.target === messageBox) {
+          hideMessageBox();
+        }
       });
-    }
-
-
-    // --- INIT ---
-
-    function initFirebase() {
-      try {
-        app = initializeApp(firebaseConfig);
-        db = getFirestore(app);
-        auth = getAuth(app);
-        storage = getStorage(app);
-
-        onAuthStateChanged(auth, (user) => {
-          if (user) {
-            currentUserId = user.uid;
-            currentUserEmail = user.email;
-
-            loadUserName(currentUserId);
-            customerEmailInput.value = currentUserEmail;
-            setupOrderHistoryListener(currentUserId);
-
-            authOverlay.classList.add('hidden');
-            mainContainer.classList.remove('hidden');
-            userIdDisplay.classList.remove('hidden');
-            isAuthReady = true;
-
-            fetchProductCatalog();
-            loadCartLocally();
-            createRestoreButton();
-          } else {
-            currentUserId = null;
-            currentUserEmail = null;
-            currentUserNameSpan.textContent = 'N/A';
-            customerEmailInput.value = '';
-            customerNameInput.value = '';
-
-            authOverlay.classList.remove('hidden');
-            mainContainer.classList.add('hidden');
-            userIdDisplay.classList.add('hidden');
-            isAuthReady = true;
-          }
-        });
-
-      } catch (e) {
-        console.error("Firebase Init Error:", e);
-        showMessageBox("Firebase connection failed. Check console for details.");
-      }
-    }
-
-    toggleAuthMode.addEventListener('click', toggleAuthModeHandler);
-    authSubmitButton.addEventListener('click', authSubmitHandler);
-    logoutButton.addEventListener('click', () => signOut(auth));
-
-    floatingOrderHistoryBtn.addEventListener('click', () => orderHistoryModal.classList.remove('hidden'));
-    orderHistoryModalCloseBtn.addEventListener('click', () => orderHistoryModal.classList.add('hidden'));
-
-
-    initFirebase();
-    fetchProductCatalog();
-
-    messageBox.addEventListener('click', (e) => {
-      if (e.target === messageBox) {
-        hideMessageBox();
-      }
-    });
 
   </script>
 </body>
