@@ -1008,6 +1008,9 @@
         return;
       }
 
+      if (isSubmitting) return;
+      isSubmitting = true;
+
       submitOrderButton.disabled = true;
       submitOrderButton.textContent = 'Submitting...';
 
@@ -1028,8 +1031,12 @@
           timestamp: serverTimestamp()
         };
 
-        await addDoc(collection(db, ORDERS_COLLECTION_PATH), orderData);
-        console.log("Order successfully written to Firestore:", sequentialOrderId);
+        const now = new Date();
+        const dateString = now.toISOString().replace(/T/, '_').replace(/:/g, '-').split('.')[0];
+        const docId = `${dateString}_${sequentialOrderId}`;
+
+        await setDoc(doc(db, ORDERS_COLLECTION_PATH, docId), orderData);
+        console.log("Order successfully written to Firestore:", docId);
 
         await sendEmailNotifications(orderData);
 
@@ -1047,6 +1054,7 @@
         console.error("Error submitting order:", error);
         showMessageBox(`Failed to submit order. Error: ${error.message}`);
       } finally {
+        isSubmitting = false;
         submitOrderButton.disabled = false;
         submitOrderButton.textContent = 'Submit Order';
       }
@@ -1189,8 +1197,11 @@
       proofModal.classList.remove('hidden');
     });
 
+    let isSubmitting = false; // Guard against double clicks
+
     closeProofModal.addEventListener('click', () => proofModal.classList.add('hidden'));
     approveProofBtn.addEventListener('click', async () => {
+      if (isSubmitting) return;
       proofModal.classList.add('hidden');
       await submitOrderToFirestore();
     });
