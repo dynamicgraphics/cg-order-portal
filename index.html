@@ -2,785 +2,763 @@
 <html lang="en">
 
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>CG Weekly Ordering Portal</title>
-  <!-- Favicon -->
-  <link rel="icon"
-    href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>⚙️</text></svg>">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CG Weekly Ordering Portal</title>
+    <!-- Favicon -->
+    <link rel="icon"
+        href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>⚙️</text></svg>">
 
-  <!-- Tailwind CSS CDN -->
-  <script src="https://cdn.tailwindcss.com"></script>
-  <!-- EmailJS CDN -->
-  <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
-  <style>
-    *,
-    *::before,
-    *::after {
-      box-sizing: border-box;
-    }
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- EmailJS CDN -->
+    <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
+    <style>
+        *,
+        *::before,
+        *::after {
+            box-sizing: border-box;
+        }
 
-    body {
-      font-family: 'Inter', sans-serif;
-      /* Added padding-right adjustment for the floating button */
-      @apply bg-gray-100 flex items-center justify-center min-h-screen p-4 pr-[90px] overflow-x-hidden;
-    }
+        body {
+            font-family: 'Inter', sans-serif;
+            /* Added padding-right adjustment for the floating button */
+            @apply bg-gray-100 flex items-center justify-center min-h-screen p-4 pr-[90px] overflow-x-hidden;
+        }
 
-    .container {
-      @apply bg-white shadow-lg rounded-xl p-4 sm:p-6 w-full mx-auto flex flex-col md:flex-row gap-6 justify-between overflow-x-hidden;
-    }
+        .container {
+            @apply bg-white shadow-lg rounded-xl p-4 sm:p-6 w-full mx-auto flex flex-col md:flex-row gap-6 justify-between overflow-x-hidden;
+        }
 
-    .column-content {
-      @apply space-y-6;
-    }
+        .column-content {
+            @apply space-y-6;
+        }
 
-    /* Hide number input spin buttons */
-    input[type="number"]::-webkit-inner-spin-button,
-    input[type="number"]::-webkit-outer-spin-button {
-      -webkit-appearance: none;
-      margin: 0;
-    }
+        /* Hide number input spin buttons */
+        input[type="number"]::-webkit-inner-spin-button,
+        input[type="number"]::-webkit-outer-spin-button {
+            -webkit-appearance: none;
+            margin: 0;
+        }
 
-    input[type="number"] {
-      -moz-appearance: textfield;
-    }
+        input[type="number"] {
+            -moz-appearance: textfield;
+        }
 
-    .order-list-scroll {
-      max-height: 400px;
-      overflow-y: auto;
-      scrollbar-width: thin;
-      scrollbar-color: #cbd5e0 #edf2f7;
-    }
+        .order-list-scroll {
+            max-height: 400px;
+            overflow-y: auto;
+            scrollbar-width: thin;
+            scrollbar-color: #cbd5e0 #edf2f7;
+        }
 
-    .order-list-scroll::-webkit-scrollbar {
-      width: 8px;
-    }
+        .order-list-scroll::-webkit-scrollbar {
+            width: 8px;
+        }
 
-    .order-list-scroll::-webkit-scrollbar-track {
-      background: #edf2f7;
-      border-radius: 10px;
-    }
+        .order-list-scroll::-webkit-scrollbar-track {
+            background: #edf2f7;
+            border-radius: 10px;
+        }
 
-    .order-list-scroll::-webkit-scrollbar-thumb {
-      background-color: #cbd5e0;
-      border-radius: 10px;
-      border: 2px solid #edf2f7;
-    }
+        .order-list-scroll::-webkit-scrollbar-thumb {
+            background-color: #cbd5e0;
+            border-radius: 10px;
+            border: 2px solid #edf2f7;
+        }
 
-    #authOverlay {
-      position: fixed;
-      top: 0;
-      left: 0;
-      width: 100%;
-      height: 100%;
-      background-color: rgba(0, 0, 0, 0.8);
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      z-index: 100;
-      flex-direction: column;
-    }
+        #authOverlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.8);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 100;
+            flex-direction: column;
+        }
 
-    #authOverlay.hidden {
-      display: none !important;
-    }
+        #authOverlay.hidden {
+            display: none !important;
+        }
 
-    .auth-prompt {
-      background-color: white;
-      padding: 30px;
-      border-radius: 10px;
-      text-align: center;
-      box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
-      width: 90%;
-      max-width: 400px;
-    }
+        .auth-prompt {
+            background-color: white;
+            padding: 30px;
+            border-radius: 10px;
+            text-align: center;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+            width: 90%;
+            max-width: 400px;
+        }
 
-    .auth-prompt input {
-      padding: 10px;
-      margin: 10px 0;
-      border: 1px solid #ccc;
-      border-radius: 5px;
-      width: 100%;
-      display: block;
-    }
+        .auth-prompt input {
+            padding: 10px;
+            margin: 10px 0;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            width: 100%;
+            display: block;
+        }
 
-    .auth-prompt button {
-      background-color: #4CAF50;
-      color: white;
-      padding: 10px 20px;
-      border-radius: 5px;
-      cursor: pointer;
-      transition: background-color 0.3s;
-      margin-top: 15px;
-    }
+        .auth-prompt button {
+            background-color: #4CAF50;
+            color: white;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: background-color 0.3s;
+            margin-top: 15px;
+        }
 
-    .auth-prompt button:hover {
-      background-color: #45a049;
-    }
+        .auth-prompt button:hover {
+            background-color: #45a049;
+        }
 
-    .auth-prompt p {
-      color: red;
-      margin-top: 10px;
-    }
+        .auth-prompt p {
+            color: red;
+            margin-top: 10px;
+        }
 
-    .total-quantity-portal {
-      font-size: 1.125rem;
-      font-weight: 700;
-      color: #333333;
-    }
+        .total-quantity-portal {
+            font-size: 1.125rem;
+            font-weight: 700;
+            color: #333333;
+        }
 
-    .order-history-card {
-      background-color: white;
-      border-radius: 0.5rem;
-      box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
-      margin-bottom: 1rem;
-      overflow: hidden;
-      border: 1px solid #e2e8f0;
-    }
+        .order-history-card {
+            background-color: white;
+            border-radius: 0.5rem;
+            box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+            margin-bottom: 1rem;
+            overflow: hidden;
+            border: 1px solid #e2e8f0;
+        }
 
-    .order-history-header {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      width: 100%;
-      text-align: left;
-      padding: 0.75rem 1rem;
-      background-color: #2563eb;
-      color: white;
-      font-weight: 600;
-      cursor: pointer;
-      border: none;
-      transition: background-color 0.2s ease-in-out;
-    }
+        .order-history-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            width: 100%;
+            text-align: left;
+            padding: 0.75rem 1rem;
+            background-color: #2563eb;
+            color: white;
+            font-weight: 600;
+            cursor: pointer;
+            border: none;
+            transition: background-color 0.2s ease-in-out;
+        }
 
-    .order-history-header:hover {
-      background-color: #1d4ed8;
-    }
+        .order-history-header:hover {
+            background-color: #1d4ed8;
+        }
 
-    .order-history-header h4 {
-      color: white;
-      margin: 0;
-    }
+        .order-history-header h4 {
+            color: white;
+            margin: 0;
+        }
 
-    .order-history-header .toggle-details-btn {
-      color: white;
-      text-decoration: underline;
-      font-size: 0.875rem;
-    }
+        .order-history-header .toggle-details-btn {
+            color: white;
+            text-decoration: underline;
+            font-size: 0.875rem;
+        }
 
-    .order-history-details {
-      padding: 1rem;
-      border-top: 1px solid #e2e8f0;
-      background-color: #f8fafc;
-    }
+        .order-history-details {
+            padding: 1rem;
+            border-top: 1px solid #e2e8f0;
+            background-color: #f8fafc;
+        }
 
-    .reorder-btn {
-      display: inline-block;
-      padding: 10px 20px;
-      background-color: #8b5cf6;
-      color: white;
-      border-radius: 8px;
-      font-weight: 600;
-      transition: background-color 0.2s ease-in-out;
-      font-size: 0.875rem;
-      margin-top: 12px;
-      box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
-      border: none;
-      cursor: pointer;
-    }
+        .reorder-btn {
+            display: inline-block;
+            padding: 10px 20px;
+            background-color: #8b5cf6;
+            color: white;
+            border-radius: 8px;
+            font-weight: 600;
+            transition: background-color 0.2s ease-in-out;
+            font-size: 0.875rem;
+            margin-top: 12px;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+            border: none;
+            cursor: pointer;
+        }
 
-    .reorder-btn:hover {
-      background-color: #7c3aed;
-    }
+        .reorder-btn:hover {
+            background-color: #7c3aed;
+        }
 
-    #floatingOrderHistoryBtn {
-      position: fixed;
-      right: 0;
-      top: 50%;
-      transform: translateY(-50%);
-      z-index: 1000;
-      background-image: linear-gradient(to bottom, #4f46e5, #2563eb);
-      @apply text-white py-8 px-6 rounded-l-full rounded-r-full shadow-xl font-extrabold text-lg hover:opacity-90 transition duration-200 flex flex-col items-center justify-center gap-2 border-y-4 border-l-4 border-blue-300;
-      width: auto;
-      min-height: 150px;
-      box-shadow: -10px 0 20px rgba(0, 0, 0, 0.4), -5px 0 10px rgba(0, 0, 0, 0.3);
-      writing-mode: vertical-lr;
-      text-align: center;
-      white-space: nowrap;
-      text-transform: none;
-      color: white !important;
-      font-weight: 900 !important;
-    }
+        #floatingOrderHistoryBtn {
+            position: fixed;
+            right: 0;
+            top: 50%;
+            transform: translateY(-50%);
+            z-index: 1000;
+            background-image: linear-gradient(to bottom, #4f46e5, #2563eb);
+            @apply text-white py-8 px-6 rounded-l-full rounded-r-full shadow-xl font-extrabold text-lg hover:opacity-90 transition duration-200 flex flex-col items-center justify-center gap-2 border-y-4 border-l-4 border-blue-300;
+            width: auto;
+            min-height: 150px;
+            box-shadow: -10px 0 20px rgba(0, 0, 0, 0.4), -5px 0 10px rgba(0, 0, 0, 0.3);
+            writing-mode: vertical-lr;
+            text-align: center;
+            white-space: nowrap;
+            text-transform: none;
+            color: white !important;
+            font-weight: 900 !important;
+        }
 
-    #floatingOrderHistoryBtn svg {
-      margin-bottom: 8px;
-      margin-right: 0;
-      height: 24px;
-      width: 24px;
-    }
+        #floatingOrderHistoryBtn svg {
+            margin-bottom: 8px;
+            margin-right: 0;
+            height: 24px;
+            width: 24px;
+        }
 
-    #orderHistoryModal {
-      position: fixed;
-      top: 0;
-      left: 0;
-      width: 100%;
-      height: 100%;
-      background-color: rgba(0, 0, 0, 0.9);
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      z-index: 1001;
-      flex-direction: column;
-      padding: 1rem;
-    }
+        #orderHistoryModal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.9);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 1001;
+            flex-direction: column;
+            padding: 1rem;
+        }
 
-    #orderHistoryModal.hidden {
-      display: none !important;
-    }
+        #orderHistoryModal.hidden {
+            display: none !important;
+        }
 
-    #orderHistoryModalContent {
-      background-color: white;
-      padding: 1.5rem;
-      border-radius: 0.75rem;
-      width: 100%;
-      max-width: 600px;
-      max-height: 90vh;
-      overflow-y: auto;
-      position: relative;
-      @apply shadow-2xl;
-    }
+        #orderHistoryModalContent {
+            background-color: white;
+            padding: 1.5rem;
+            border-radius: 0.75rem;
+            width: 100%;
+            max-width: 600px;
+            max-height: 90vh;
+            overflow-y: auto;
+            position: relative;
+            @apply shadow-2xl;
+        }
 
-    #orderHistoryModalCloseBtn {
-      position: absolute;
-      top: 10px;
-      right: 10px;
-      @apply bg-red-500 text-white rounded-full h-8 w-8 flex items-center justify-center text-xl font-bold hover:bg-red-600 transition duration-200;
-    }
+        #orderHistoryModalCloseBtn {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            @apply bg-red-500 text-white rounded-full h-8 w-8 flex items-center justify-center text-xl font-bold hover:bg-red-600 transition duration-200;
+        }
 
-    #proofModal {
-      position: fixed;
-      top: 0;
-      left: 0;
-      width: 100%;
-      height: 100%;
-      background-color: rgba(0, 0, 0, 0.9);
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      z-index: 1002;
-      flex-direction: column;
-      padding: 1rem;
-    }
+        #proofModal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.9);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 1002;
+            flex-direction: column;
+            padding: 1rem;
+        }
 
-    #proofModal.hidden {
-      display: none !important;
-    }
+        #proofModal.hidden {
+            display: none !important;
+        }
 
-    #proofModalContent {
-      background-color: white;
-      padding: 1.5rem;
-      border-radius: 0.75rem;
-      width: 100%;
-      max-width: 600px;
-      max-height: 90vh;
-      overflow-y: auto;
-      position: relative;
-      @apply shadow-2xl;
-    }
+        #proofModalContent {
+            background-color: white;
+            padding: 1.5rem;
+            border-radius: 0.75rem;
+            width: 100%;
+            max-width: 600px;
+            max-height: 90vh;
+            overflow-y: auto;
+            position: relative;
+            @apply shadow-2xl;
+        }
 
-    #closeProofModal {
-      position: absolute;
-      top: 10px;
-      right: 10px;
-      @apply bg-gray-300 text-gray-700 rounded-full h-8 w-8 flex items-center justify-center text-xl font-bold hover:bg-gray-400 transition duration-200;
-    }
+        #closeProofModal {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            @apply bg-gray-300 text-gray-700 rounded-full h-8 w-8 flex items-center justify-center text-xl font-bold hover:bg-gray-400 transition duration-200;
+        }
 
-    #proofContent img.proof-item-img {
-      max-width: 50px;
-      max-height: 50px;
-      object-fit: contain;
-      border-radius: 0.25rem;
-      border: 1px solid #e2e8f0;
-      box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
-      margin-bottom: 0.25rem;
-    }
+        #proofContent img.proof-item-img {
+            max-width: 50px;
+            max-height: 50px;
+            object-fit: contain;
+            border-radius: 0.25rem;
+            border: 1px solid #e2e8f0;
+            box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+            margin-bottom: 0.25rem;
+        }
 
-    #proofContent {
-      display: flex;
-      flex-wrap: wrap;
-      justify-content: center;
-      gap: 1rem;
-      text-align: left;
-      max-height: 96vh;
-      overflow-y: auto;
-      padding: 0.5rem;
-      border-radius: 0.375rem;
-      background-color: #ffffff;
-      border: 1px solid #e2e8f0;
-    }
+        #proofContent {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 1rem;
+            text-align: left;
+            max-height: 96vh;
+            overflow-y: auto;
+            padding: 0.5rem;
+            border-radius: 0.375rem;
+            background-color: #ffffff;
+            border: 1px solid #e2e8f0;
+        }
 
-    #proofContent .proof-item {
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      max-width: 160px;
-      width: 100%;
-      padding: 0.75rem;
-      border: 1px solid #e2e8f0;
-      border-radius: 0.5rem;
-      background-color: #f8fafc;
-      box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
-      text-align: center;
-    }
+        #proofContent .proof-item {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            max-width: 160px;
+            width: 100%;
+            padding: 0.75rem;
+            border: 1px solid #e2e8f0;
+            border-radius: 0.5rem;
+            background-color: #f8fafc;
+            box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+            text-align: center;
+        }
 
-    #proofContent .proof-item:last-child {
-      border-bottom: 1px solid #e2e8f0;
-    }
+        #proofContent .proof-item:last-child {
+            border-bottom: 1px solid #e2e8f0;
+        }
 
-    #proofContent .proof-item-details {
-      margin-top: 0.5rem;
-      width: 100%;
-    }
+        #proofContent .proof-item-details {
+            margin-top: 0.5rem;
+            width: 100%;
+        }
 
-    #proofContent .proof-item-details p {
-      margin-bottom: 0.125rem;
-      font-size: 0.875rem;
-      word-break: break-word;
-      overflow-wrap: break-word;
-    }
+        #proofContent .proof-item-details p {
+            margin-bottom: 0.125rem;
+            font-size: 0.875rem;
+            word-break: break-word;
+            overflow-wrap: break-word;
+        }
 
-    #proofContent .proof-item-details p:last-child {
-      margin-bottom: 0;
-    }
-  </style>
+        #proofContent .proof-item-details p:last-child {
+            margin-bottom: 0;
+        }
+    </style>
 </head>
 
 <body>
-  <!-- Authentication Overlay -->
-  <div id="authOverlay" class="hidden">
-    <div class="auth-prompt">
-      <h2 id="authTitle" class="text-2xl font-bold mb-4">Login to Access Portal</h2>
-      <input type="text" id="authName" placeholder="Your Name" class="hidden" autocomplete="name">
-      <input type="email" id="authEmail" placeholder="Email" autocomplete="email">
-      <input type="password" id="authPassword" placeholder="Password" autocomplete="current-password">
-      <button id="authSubmit">Login</button>
-      <p id="authError" class="hidden text-sm"></p>
-      <p class="mt-4 text-gray-600">
-        <span id="toggleAuthModeText">Don't have an account?</span>
-        <button id="toggleAuthMode" class="text-blue-600 hover:underline font-semibold">Sign Up</button>
-      </p>
-    </div>
-  </div>
-
-  <!-- Main content container -->
-  <div class="container hidden">
-    <div class="w-full md:flex-grow flex-shrink-0 column-content">
-      <h1 class="text-3xl font-bold text-gray-800 text-center mb-6">CG Weekly Order Portal</h1>
-      <div id="userIdDisplay" class="text-sm text-gray-600 text-center mb-4 hidden">
-        Logged in as: <span id="currentUserName" class="font-mono text-xs">Loading...</span>
-        <button id="logoutButton"
-          class="ml-2 px-3 py-1 bg-red-500 text-white rounded-lg text-xs hover:bg-red-600 transition duration-200">Logout</button>
-      </div>
-      <div id="messageBox" class="hidden fixed inset-0 bg-gray-600 bg-opacity-75 flex items-center justify-center z-50">
-        <div class="bg-white p-6 rounded-xl shadow-lg max-w-sm w-full text-center space-y-4">
-          <p id="messageText" class="text-gray-700 text-lg"></p>
-          <button id="closeMessageBox"
-            class="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition duration-200">OK</button>
+    <!-- Authentication Overlay -->
+    <div id="authOverlay" class="hidden">
+        <div class="auth-prompt">
+            <h2 id="authTitle" class="text-2xl font-bold mb-4">Login to Access Portal</h2>
+            <input type="text" id="authName" placeholder="Your Name" class="hidden" autocomplete="name">
+            <input type="email" id="authEmail" placeholder="Email" autocomplete="email">
+            <input type="password" id="authPassword" placeholder="Password" autocomplete="current-password">
+            <button id="authSubmit">Login</button>
+            <p id="authError" class="hidden text-sm"></p>
+            <p class="mt-4 text-gray-600">
+                <span id="toggleAuthModeText">Don't have an account?</span>
+                <button id="toggleAuthMode" class="text-blue-600 hover:underline font-semibold">Sign Up</button>
+            </p>
         </div>
-      </div>
-      <div class="bg-blue-50 p-4 rounded-lg">
-        <label for="partSearch" class="block text-gray-700 text-lg font-semibold mb-2">Search Part by
-          Number/Name:</label>
-        <div class="flex flex-col sm:flex-row gap-4">
-          <input type="text" id="partSearch" placeholder="(e.g., CG-001, BuzzOff2)"
-            class="flex-grow p-3 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 shadow-sm">
-          <button id="searchButton"
-            class="px-6 py-3 bg-blue-600 text-white rounded-lg font-semibold hover:bg-blue-700 transition duration-200 shadow-md">
-            Search
-          </button>
-        </div>
-        <div id="loadingIndicator" class="hidden text-center mt-4 text-blue-600 font-medium">
-          Searching...
-        </div>
-        <div id="searchResults" class="mt-4 flex flex-wrap justify-center gap-4 overflow-x-hidden">
-        </div>
-        <div id="noResults" class="hidden text-center text-gray-500 mt-4">No products found. Please try a different
-          search term.</div>
-      </div>
-
-      <!-- Custom Uploads Section - UPDATED WITH QUANTITY INPUT -->
-      <div class="bg-indigo-50 p-4 rounded-lg">
-        <h2 class="text-2xl font-bold text-gray-800 mb-4">Custom Uploads (New Designs)</h2>
-        <p class="text-gray-600 mb-4 text-sm">Upload new PNG designs here. Enter the total quantity needed (minimum
-          100).</p>
-        <div class="flex flex-col gap-4 mb-4">
-          <label for="customQuantityInput" class="block text-gray-700 font-semibold mb-[-8px]">Total Quantity for New
-            Design:</label>
-          <input type="number" id="customQuantityInput" value="2000" min="100" placeholder="Quantity (Min 100)"
-            class="w-full p-3 border border-gray-300 rounded-lg focus:ring-indigo-500 focus:border-indigo-500 shadow-sm">
-          <label for="customFileUpload" class="block text-gray-700 font-semibold mb-[-8px]">Select PNG File(s):</label>
-          <input type="file" id="customFileUpload" accept="image/png" multiple
-            class="w-full p-2 border border-gray-300 rounded-lg focus:ring-indigo-500 focus:border-indigo-500 shadow-sm text-sm bg-white">
-        </div>
-        <button id="uploadCustomFileBtn"
-          class="w-full px-6 py-3 bg-indigo-600 text-white rounded-lg font-semibold hover:bg-indigo-700 transition duration-200 shadow-md">
-          Upload & Add to Order
-        </button>
-        <div id="customUploadList" class="mt-4 space-y-2">
-          <!-- Upload status messages will appear here -->
-        </div>
-      </div>
-
-      <!-- Order List Section -->
-      <div class="bg-green-50 p-4 rounded-lg">
-        <h2 class="text-2xl font-bold text-gray-800 mb-4">Your Current Order</h2>
-        <div id="orderList" class="order-list-scroll border border-gray-200 rounded-lg divide-y divide-gray-200">
-          <div class="p-4 text-gray-500 text-center" id="emptyOrderMessage">No items in your order yet.</div>
-        </div>
-
-        <!-- Order Totals Summary Section -->
-        <div id="orderTotalsSummary" class="bg-white border border-gray-200 rounded-lg p-4 mt-4 hidden">
-          <h3 class="text-xl font-bold text-gray-800 mb-3">Order Totals:</h3>
-          <p class="text-gray-700 mb-1"><strong>Total Quantity (excluding "Glow in the Dark"):</strong> <span
-              id="totalNonGlow" class="total-quantity-portal">0</span></p>
-          <p class="text-gray-700 mb-1"><strong>"Glow in the Dark" Stickers Quantity:</strong> <span id="totalGlow"
-              class="total-quantity-portal">0</span></p>
-          <p class="text-gray-700"><strong>Envelope Quantity (in 1,000s):</strong> <span id="totalEnvelope"
-              class="total-quantity-portal">0</span></p>
-        </div>
-      </div>
-
-      <!-- Customer Information and Submit Order Section -->
-      <div class="bg-purple-50 p-4 rounded-lg">
-        <h2 class="text-2xl font-bold text-gray-800 mb-4">Your Details</h2>
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
-          <div>
-            <label for="customerName" class="block text-gray-700 font-semibold mb-2">Your Name:</label>
-            <input type="text" id="customerName" placeholder="John Doe"
-              class="w-full p-3 border border-gray-300 rounded-lg focus:ring-purple-500 focus:border-purple-500 shadow-sm">
-          </div>
-          <div>
-            <label for="customerEmail" class="block text-gray-700 font-semibold mb-2">Your Email:</label>
-            <input type="email" id="customerEmail" placeholder="john.doe@example.com"
-              class="w-full p-3 border border-gray-300 rounded-lg focus:ring-purple-500 focus:border-purple-500 shadow-sm"
-              readonly>
-          </div>
-        </div>
-        <div class="mb-6">
-          <label for="customerNotes" class="block text-gray-700 font-semibold mb-2">Notes (Optional):</label>
-          <textarea id="customerNotes" rows="4" placeholder="Any special instructions or details for this order..."
-            class="w-full p-3 border border-gray-300 rounded-lg focus:ring-purple-500 focus:border-purple-500 shadow-sm"></textarea>
-        </div>
-        <div class="flex flex-col sm:flex-row justify-center gap-4">
-          <button id="generateProofBtn"
-            class="w-full sm:w-1/2 px-6 py-4 bg-indigo-600 text-white rounded-lg font-bold text-xl hover:bg-indigo-700 transition duration-200 shadow-lg">
-            Confirm Order & Review
-          </button>
-          <button id="submitOrder"
-            class="w-full sm:w-1/2 px-6 py-4 bg-purple-600 text-white rounded-lg font-bold text-xl hover:bg-purple-700 transition duration-200 shadow-lg hidden">
-            Submit Order
-          </button>
-        </div>
-      </div>
     </div>
 
-    <!-- Right Column (Order History) -->
-    <div class="w-full md:max-w-sm flex-shrink-0 column-content hidden lg:block">
-      <div class="bg-yellow-50 p-4 rounded-lg">
-        <h2 class="text-2xl font-bold text-gray-800 mb-4">Your Order History</h2>
-        <div id="orderHistoryListDesktop" class="order-list-scroll border border-gray-200 rounded-lg">
-          <div class="p-4 text-gray-500 text-center" id="emptyOrderHistoryMessageDesktop">No past orders found.</div>
+    <!-- Main content container -->
+    <div class="container hidden">
+        <div class="w-full md:flex-grow flex-shrink-0 column-content">
+            <h1 class="text-3xl font-bold text-gray-800 text-center mb-6">CG Weekly Order Portal</h1>
+            <div id="userIdDisplay" class="text-sm text-gray-600 text-center mb-4 hidden">
+                Logged in as: <span id="currentUserName" class="font-mono text-xs">Loading...</span>
+                <button id="logoutButton"
+                    class="ml-2 px-3 py-1 bg-red-500 text-white rounded-lg text-xs hover:bg-red-600 transition duration-200">Logout</button>
+            </div>
+            <div id="messageBox"
+                class="hidden fixed inset-0 bg-gray-600 bg-opacity-75 flex items-center justify-center z-50">
+                <div class="bg-white p-6 rounded-xl shadow-lg max-w-sm w-full text-center space-y-4">
+                    <p id="messageText" class="text-gray-700 text-lg"></p>
+                    <button id="closeMessageBox"
+                        class="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition duration-200">OK</button>
+                </div>
+            </div>
+            <div class="bg-blue-50 p-4 rounded-lg">
+                <label for="partSearch" class="block text-gray-700 text-lg font-semibold mb-2">Search Part by
+                    Number/Name:</label>
+                <div class="flex flex-col sm:flex-row gap-4">
+                    <input type="text" id="partSearch" placeholder="(e.g., CG-001, BuzzOff2)"
+                        class="flex-grow p-3 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 shadow-sm">
+                    <button id="searchButton"
+                        class="px-6 py-3 bg-blue-600 text-white rounded-lg font-semibold hover:bg-blue-700 transition duration-200 shadow-md">
+                        Search
+                    </button>
+                </div>
+                <div id="loadingIndicator" class="hidden text-center mt-4 text-blue-600 font-medium">
+                    Searching...
+                </div>
+                <div id="searchResults" class="mt-4 flex flex-wrap justify-center gap-4 overflow-x-hidden">
+                </div>
+                <div id="noResults" class="hidden text-center text-gray-500 mt-4">No products found. Please try a
+                    different
+                    search term.</div>
+            </div>
+
+            <!-- Custom Uploads Section - UPDATED WITH QUANTITY INPUT -->
+            <div class="bg-indigo-50 p-4 rounded-lg">
+                <h2 class="text-2xl font-bold text-gray-800 mb-4">Custom Uploads (New Designs)</h2>
+                <p class="text-gray-600 mb-4 text-sm">Upload new PNG designs here. Enter the total quantity needed
+                    (minimum
+                    100).</p>
+                <div class="flex flex-col gap-4 mb-4">
+                    <label for="customQuantityInput" class="block text-gray-700 font-semibold mb-[-8px]">Total Quantity
+                        for New
+                        Design:</label>
+                    <input type="number" id="customQuantityInput" value="2000" min="100"
+                        placeholder="Quantity (Min 100)"
+                        class="w-full p-3 border border-gray-300 rounded-lg focus:ring-indigo-500 focus:border-indigo-500 shadow-sm">
+                    <label for="customFileUpload" class="block text-gray-700 font-semibold mb-[-8px]">Select PNG
+                        File(s):</label>
+                    <input type="file" id="customFileUpload" accept="image/png" multiple
+                        class="w-full p-2 border border-gray-300 rounded-lg focus:ring-indigo-500 focus:border-indigo-500 shadow-sm text-sm bg-white">
+                </div>
+                <button id="uploadCustomFileBtn"
+                    class="w-full px-6 py-3 bg-indigo-600 text-white rounded-lg font-semibold hover:bg-indigo-700 transition duration-200 shadow-md">
+                    Upload & Add to Order
+                </button>
+                <div id="customUploadList" class="mt-4 space-y-2">
+                    <!-- Upload status messages will appear here -->
+                </div>
+            </div>
+
+            <!-- Order List Section -->
+            <div class="bg-green-50 p-4 rounded-lg">
+                <h2 class="text-2xl font-bold text-gray-800 mb-4">Your Current Order</h2>
+                <div id="orderList"
+                    class="order-list-scroll border border-gray-200 rounded-lg divide-y divide-gray-200">
+                    <div class="p-4 text-gray-500 text-center" id="emptyOrderMessage">No items in your order yet.</div>
+                </div>
+
+                <!-- Order Totals Summary Section -->
+                <div id="orderTotalsSummary" class="bg-white border border-gray-200 rounded-lg p-4 mt-4 hidden">
+                    <h3 class="text-xl font-bold text-gray-800 mb-3">Order Totals:</h3>
+                    <p class="text-gray-700 mb-1"><strong>Total Quantity (excluding "Glow in the Dark"):</strong> <span
+                            id="totalNonGlow" class="total-quantity-portal">0</span></p>
+                    <p class="text-gray-700 mb-1"><strong>"Glow in the Dark" Stickers Quantity:</strong> <span
+                            id="totalGlow" class="total-quantity-portal">0</span></p>
+                    <p class="text-gray-700"><strong>Envelope Quantity (in 1,000s):</strong> <span id="totalEnvelope"
+                            class="total-quantity-portal">0</span></p>
+                </div>
+            </div>
+
+            <!-- Customer Information and Submit Order Section -->
+            <div class="bg-purple-50 p-4 rounded-lg">
+                <h2 class="text-2xl font-bold text-gray-800 mb-4">Your Details</h2>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                    <div>
+                        <label for="customerName" class="block text-gray-700 font-semibold mb-2">Your Name:</label>
+                        <input type="text" id="customerName" placeholder="John Doe"
+                            class="w-full p-3 border border-gray-300 rounded-lg focus:ring-purple-500 focus:border-purple-500 shadow-sm">
+                    </div>
+                    <div>
+                        <label for="customerEmail" class="block text-gray-700 font-semibold mb-2">Your Email:</label>
+                        <input type="email" id="customerEmail" placeholder="john.doe@example.com"
+                            class="w-full p-3 border border-gray-300 rounded-lg focus:ring-purple-500 focus:border-purple-500 shadow-sm"
+                            readonly>
+                    </div>
+                </div>
+                <div class="mb-6">
+                    <label for="customerNotes" class="block text-gray-700 font-semibold mb-2">Notes (Optional):</label>
+                    <textarea id="customerNotes" rows="4"
+                        placeholder="Any special instructions or details for this order..."
+                        class="w-full p-3 border border-gray-300 rounded-lg focus:ring-purple-500 focus:border-purple-500 shadow-sm"></textarea>
+                </div>
+                <div class="flex flex-col sm:flex-row justify-center gap-4">
+                    <button id="generateProofBtn"
+                        class="w-full sm:w-1/2 px-6 py-4 bg-indigo-600 text-white rounded-lg font-bold text-xl hover:bg-indigo-700 transition duration-200 shadow-lg">
+                        Confirm Order & Review
+                    </button>
+                    <button id="submitOrder"
+                        class="w-full sm:w-1/2 px-6 py-4 bg-purple-600 text-white rounded-lg font-bold text-xl hover:bg-purple-700 transition duration-200 shadow-lg hidden">
+                        Submit Order
+                    </button>
+                </div>
+            </div>
         </div>
-      </div>
+
+        <!-- Right Column (Order History) -->
+        <div class="w-full md:max-w-sm flex-shrink-0 column-content hidden lg:block">
+            <div class="bg-yellow-50 p-4 rounded-lg">
+                <h2 class="text-2xl font-bold text-gray-800 mb-4">Your Order History</h2>
+                <div id="orderHistoryListDesktop" class="order-list-scroll border border-gray-200 rounded-lg">
+                    <div class="p-4 text-gray-500 text-center" id="emptyOrderHistoryMessageDesktop">No past orders
+                        found.</div>
+                </div>
+            </div>
+        </div>
     </div>
-  </div>
 
-  <!-- Floating Order History Button (Mobile Only) -->
-  <button id="floatingOrderHistoryBtn" class="lg:hidden">
-    Order History
-  </button>
+    <!-- Floating Order History Button (Mobile Only) -->
+    <button id="floatingOrderHistoryBtn" class="lg:hidden">
+        Order History
+    </button>
 
-  <!-- Full-Screen Order History Modal (Mobile Only) -->
-  <div id="orderHistoryModal" class="hidden">
-    <div id="orderHistoryModalContent">
-      <button id="orderHistoryModalCloseBtn">X</button>
-      <h2 class="text-2xl font-bold text-gray-800 mb-4">Your Order History</h2>
-      <div id="orderHistoryListMobile" class="order-list-scroll border border-gray-200 rounded-lg">
-        <div class="p-4 text-gray-500 text-center" id="emptyOrderHistoryMessageMobile">No past orders found.</div>
-      </div>
+    <!-- Full-Screen Order History Modal (Mobile Only) -->
+    <div id="orderHistoryModal" class="hidden">
+        <div id="orderHistoryModalContent">
+            <button id="orderHistoryModalCloseBtn">X</button>
+            <h2 class="text-2xl font-bold text-gray-800 mb-4">Your Order History</h2>
+            <div id="orderHistoryListMobile" class="order-list-scroll border border-gray-200 rounded-lg">
+                <div class="p-4 text-gray-500 text-center" id="emptyOrderHistoryMessageMobile">No past orders found.
+                </div>
+            </div>
+        </div>
     </div>
-  </div>
 
-  <!-- Proof Modal -->
-  <div id="proofModal" class="hidden">
-    <div id="proofModalContent"
-      class="bg-white p-6 rounded-xl shadow-lg max-w-lg w-full text-center space-y-4 relative">
-      <button id="closeProofModal"
-        class="absolute top-2 right-2 text-gray-500 hover:text-gray-800 text-2xl">&times;</button>
-      <h3 class="text-2xl font-bold mb-4">Confirm Your Order</h3>
-      <div id="proofContent">
-      </div>
-      <div class="mt-4 flex flex-col sm:flex-row justify-center gap-4">
-        <button id="approveProofBtn"
-          class="px-6 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition duration-200 w-full sm:w-auto">Confirm
-          & Submit Order</button>
-        <button id="reviseOrderBtn"
-          class="px-6 py-2 bg-yellow-500 text-white rounded-lg hover:bg-yellow-600 transition duration-200 w-full sm:w-auto">Revise
-          Order</button>
-      </div>
+    <!-- Proof Modal -->
+    <div id="proofModal" class="hidden">
+        <div id="proofModalContent"
+            class="bg-white p-6 rounded-xl shadow-lg max-w-lg w-full text-center space-y-4 relative">
+            <button id="closeProofModal"
+                class="absolute top-2 right-2 text-gray-500 hover:text-gray-800 text-2xl">&times;</button>
+            <h3 class="text-2xl font-bold mb-4">Confirm Your Order</h3>
+            <div id="proofContent">
+            </div>
+            <div class="mt-4 flex flex-col sm:flex-row justify-center gap-4">
+                <button id="approveProofBtn"
+                    class="px-6 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition duration-200 w-full sm:w-auto">Confirm
+                    & Submit Order</button>
+                <button id="reviseOrderBtn"
+                    class="px-6 py-2 bg-yellow-500 text-white rounded-lg hover:bg-yellow-600 transition duration-200 w-full sm:w-auto">Revise
+                    Order</button>
+            </div>
+        </div>
     </div>
-  </div>
 
-  <!-- Firebase SDKs and JavaScript Logic -->
-  <!-- Firebase SDKs and JavaScript Logic -->
-  <script type="module">
-    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-    import { getAuth, onAuthStateChanged, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
-    // Import runTransaction for safe sequential ID generation
-    import { getFirestore, collection, addDoc, query, onSnapshot, serverTimestamp, doc, getDoc, setDoc, runTransaction, where } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
-    // Import Firebase Storage for custom file uploads
-    import { getStorage, ref, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-storage.js";
+    <!-- Firebase SDKs and JavaScript Logic -->
+    <!-- Firebase SDKs and JavaScript Logic -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+        import { getAuth, onAuthStateChanged, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+        // Import runTransaction for safe sequential ID generation
+        import { getFirestore, collection, addDoc, query, onSnapshot, serverTimestamp, doc, getDoc, setDoc, runTransaction, where } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+        // Import Firebase Storage for custom file uploads
+        import { getStorage, ref, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-storage.js";
 
-    // --- GLOBAL FIREBASE VARIABLES ---
-    const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
+        // --- GLOBAL FIREBASE VARIABLES ---
+        const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
 
-    // NOTE: Using the user-provided config.
-    const providedConfig = {
-      apiKey: "AIzaSyBdp15BtxFu-VPkuOdkiX1WyXgAMLrj124",
-      authDomain: "cg-portal-backend.firebaseapp.com",
-      projectId: "cg-portal-backend",
-      storageBucket: "cg-portal-backend.firebasestorage.app",
-      messagingSenderId: "543604960285",
-      appId: "1:543604960285:web:03b481d610a5eb2fdcaaf4",
-    };
-    const firebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : providedConfig;
-
-    // --- CONFIGURATION ---
-    const EMAILJS_SERVICE_ID = 'service_6r03vij';
-    const EMAILJS_TEMPLATE_ID_CUSTOMER = 'template_0kb0906';
-    const EMAILJS_TEMPLATE_ID_ADMIN = 'template_zal2biw';
-    const EMAILJS_USER_ID = 'LWqR9FL0EyxzFU7jm';
-    const GOOGLE_SHEET_CSV_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vRJeafxZBqtfXhW91V849PmPbr1C0ExZmnvfQ_410tdo4PPDvXNPHC44VrBEd3G7nRpPulT-XC6R79X/pub?gid=1341072506&single=true&output=csv';
-    const ENVELOPE_SKU = 'CG-SE1';
-
-    // Firestore Collection Paths (Public data for Admin access)
-    const COUNTER_DOC_PATH = `/artifacts/${appId}/public/data/counters/orderIdCounter`;
-    const ORDERS_COLLECTION_PATH = `/artifacts/${appId}/public/data/orders`;
-
-
-    // --- GLOBAL VARIABLES & CACHED ELEMENTS ---
-    let currentOrder = [];
-    let productCatalog = [];
-
-    const searchInput = document.getElementById('partSearch');
-    const searchButton = document.getElementById('searchButton');
-    const searchResultsDiv = document.getElementById('searchResults');
-    const noResultsDiv = document.getElementById('noResults');
-    const loadingIndicator = document.getElementById('loadingIndicator');
-    const orderListDiv = document.getElementById('orderList');
-    const emptyOrderMessage = document.getElementById('emptyOrderMessage');
-    const customerNameInput = document.getElementById('customerName');
-    const customerEmailInput = document.getElementById('customerEmail');
-    const customerNotesInput = document.getElementById('customerNotes');
-    const submitOrderButton = document.getElementById('submitOrder');
-    const messageBox = document.getElementById('messageBox');
-    const messageText = document.getElementById('messageText');
-    const closeMessageBoxButton = document.getElementById('closeMessageBox');
-
-    const authOverlay = document.getElementById('authOverlay');
-    const authTitle = document.getElementById('authTitle');
-    const authNameInput = document.getElementById('authName');
-    const authEmailInput = document.getElementById('authEmail');
-    const authPasswordInput = document.getElementById('authPassword');
-    const authSubmitButton = document.getElementById('authSubmit');
-    const authError = document.getElementById('authError');
-    const toggleAuthMode = document.getElementById('toggleAuthMode');
-    const toggleAuthModeText = document.getElementById('toggleAuthModeText');
-    const mainContainer = document.querySelector('.container');
-
-    const orderTotalsSummaryDiv = document.getElementById('orderTotalsSummary');
-    const totalNonGlowSpan = document.getElementById('totalNonGlow');
-    const totalGlowSpan = document.getElementById('totalGlow');
-    const totalEnvelopeSpan = document.getElementById('totalEnvelope');
-
-    const userIdDisplay = document.getElementById('userIdDisplay');
-    const currentUserNameSpan = document.getElementById('currentUserName');
-    const logoutButton = document.getElementById('logoutButton');
-
-    const orderHistoryListDesktop = document.getElementById('orderHistoryListDesktop');
-    const emptyOrderHistoryMessageDesktop = document.getElementById('emptyOrderHistoryMessageDesktop');
-    const orderHistoryListMobile = document.getElementById('orderHistoryListMobile');
-    const emptyOrderHistoryMessageMobile = document.getElementById('emptyOrderHistoryMessageMobile');
-
-    const floatingOrderHistoryBtn = document.getElementById('floatingOrderHistoryBtn');
-    const orderHistoryModal = document.getElementById('orderHistoryModal');
-    const orderHistoryModalCloseBtn = document.getElementById('orderHistoryModalCloseBtn');
-
-    const generateProofBtn = document.getElementById('generateProofBtn');
-    const proofModal = document.getElementById('proofModal');
-    const closeProofModal = document.getElementById('closeProofModal');
-    const proofContent = document.getElementById('proofContent');
-    const approveProofBtn = document.getElementById('approveProofBtn');
-    const reviseOrderBtn = document.getElementById('reviseOrderBtn');
-
-    const customFileUploadInput = document.getElementById('customFileUpload');
-    // Custom Quantity Input
-    const customQuantityInput = document.getElementById('customQuantityInput');
-    const uploadCustomFileBtn = document.getElementById('uploadCustomFileBtn');
-    const customUploadList = document.getElementById('customUploadList');
-
-    let isLoginMode = true;
-    let app, db, auth, storage;
-    let currentUserId = null;
-    let currentUserEmail = null;
-    let currentUserNameDisplay = null;
-    let isAuthReady = false;
-
-
-    // --- PERSISTENCE & RESTORE LOGIC ---
-
-    function saveCartLocally() {
-      localStorage.setItem('cg_portal_cart', JSON.stringify(currentOrder));
-    }
-
-    function loadCartLocally() {
-      const saved = localStorage.getItem('cg_portal_cart');
-      if (saved) {
-        try {
-          currentOrder = JSON.parse(saved);
-          renderOrderList();
-        } catch (e) {
-          console.error("Error loading local cart:", e);
-        }
-      }
-    }
-
-    function handleRestoreBackup(event) {
-      const file = event.target.files[0];
-      if (!file) return;
-
-      const reader = new FileReader();
-      reader.onload = function (e) {
-        try {
-          const restoredData = JSON.parse(e.target.result);
-          if (Array.isArray(restoredData)) {
-            currentOrder = restoredData;
-            renderOrderList();
-            saveCartLocally();
-            showMessageBox("Cart successfully restored from backup!");
-          } else {
-            showMessageBox("Invalid backup file format.");
-          }
-        } catch (error) {
-          console.error("Error parsing backup:", error);
-          showMessageBox("Failed to restore backup. Invalid JSON.");
-        }
-        event.target.value = ''; // Reset input
-      };
-      reader.readAsText(file);
-    }
-
-    // --- UI INJECTIONS FOR RESTORE ---
-
-    // Add File Input for Restore
-    const restoreInput = document.createElement('input');
-    restoreInput.type = 'file';
-    restoreInput.id = 'restoreFileInput';
-
-    // --- UTILITY FUNCTIONS ---
-
-    function parseCSV(csvText) {
-      const lines = csvText.trim().split(/\r?\n/);
-      if (lines.length === 0) return [];
-
-      const csvSplitRegex = /,(?=(?:(?:[^"]*"){2})*[^"]*$)/;
-      const rawHeaders = lines[0].split(csvSplitRegex);
-      const headers = rawHeaders.map(header => header.trim().replace(/^"|"$/g, '')).filter(header => header !== '');
-      if (headers.length === 0) {
-        console.error('ERROR: No valid headers found.');
-        showMessageBox('Error: Product catalog headers are malformed or missing.');
-        return [];
-      }
-      const data = [];
-      for (let i = 1; i < lines.length; i++) {
-        const line = lines[i].trim();
-        if (line === '') continue;
-
-        const values = [];
-        let current = '';
-        let inQuote = false;
-        for (let j = 0; j < line.length; j++) {
-          const char = line[j];
-          if (char === '"') {
-            inQuote = !inQuote;
-          } else if (char === ',' && !inQuote) {
-            values.push(current.trim().replace(/^"|"$/g, ''));
-            current = '';
-          } else {
-            current += char;
-          }
-        }
-        values.push(current.trim().replace(/^"|"$/g, ''));
-
-        if (values.length !== headers.length) continue;
-
-        const rowObject = {};
-        headers.forEach((header, index) => {
-          if (header === 'searchTerms') {
-            rowObject[header] = values[index].split(',').map(term => term.trim().toLowerCase()).filter(term => term !== '');
-          } else {
-            rowObject[header] = values[index];
-          }
-        });
-        data.push(rowObject);
-      }
-      return data;
-    }
-
-    async function fetchProductCatalog() {
-      try {
-        loadingIndicator.textContent = 'Loading product catalog...';
-        loadingIndicator.classList.remove('hidden');
-        const response = await fetch(GOOGLE_SHEET_CSV_URL);
-        if (!response.ok) {
-          throw new Error(`Failed to fetch product catalog: ${response.statusText}`);
-        }
-        const csvText = await response.text();
-        productCatalog = parseCSV(csvText);
-        const envelopeItem = {
-          id: ENVELOPE_SKU,
-          title: 'Custom Sticker Envelopes',
-          sku: ENVELOPE_SKU,
-          imageUrl: 'https://storage.googleapis.com/cg-portal-assets/CG-SE1%20White%20Bubble%20Sticker%20Envelope.png',
-          searchTerms: ['envelope', 'envelopes', ENVELOPE_SKU.toLowerCase()]
+        // NOTE: Using the user-provided config.
+        const providedConfig = {
+            apiKey: "AIzaSyBdp15BtxFu-VPkuOdkiX1WyXgAMLrj124",
+            authDomain: "cg-portal-backend.firebaseapp.com",
+            projectId: "cg-portal-backend",
+            storageBucket: "cg-portal-backend.firebasestorage.app",
+            messagingSenderId: "543604960285",
+            appId: "1:543604960285:web:03b481d610a5eb2fdcaaf4",
         };
-        if (!productCatalog.some(item => item.id === envelopeItem.id)) {
-          productCatalog.push(envelopeItem);
+        const firebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : providedConfig;
+
+        // --- CONFIGURATION ---
+        const EMAILJS_SERVICE_ID = 'service_6r03vij';
+        const EMAILJS_TEMPLATE_ID_CUSTOMER = 'template_0kb0906';
+        const EMAILJS_TEMPLATE_ID_ADMIN = 'template_zal2biw';
+        const EMAILJS_USER_ID = 'LWqR9FL0EyxzFU7jm';
+        const GOOGLE_SHEET_CSV_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vRJeafxZBqtfXhW91V849PmPbr1C0ExZmnvfQ_410tdo4PPDvXNPHC44VrBEd3G7nRpPulT-XC6R79X/pub?gid=1341072506&single=true&output=csv';
+        const ENVELOPE_SKU = 'CG-SE1';
+
+        // Firestore Collection Paths (Public data for Admin access)
+        const COUNTER_DOC_PATH = `/artifacts/${appId}/public/data/counters/orderIdCounter`;
+        const ORDERS_COLLECTION_PATH = `/artifacts/${appId}/public/data/orders`;
+
+
+        // --- GLOBAL VARIABLES & CACHED ELEMENTS ---
+        let currentOrder = [];
+        let productCatalog = [];
+
+        const searchInput = document.getElementById('partSearch');
+        const searchButton = document.getElementById('searchButton');
+        const searchResultsDiv = document.getElementById('searchResults');
+        const noResultsDiv = document.getElementById('noResults');
+        const loadingIndicator = document.getElementById('loadingIndicator');
+        const orderListDiv = document.getElementById('orderList');
+        const emptyOrderMessage = document.getElementById('emptyOrderMessage');
+        const customerNameInput = document.getElementById('customerName');
+        const customerEmailInput = document.getElementById('customerEmail');
+        const customerNotesInput = document.getElementById('customerNotes');
+        const submitOrderButton = document.getElementById('submitOrder');
+        const messageBox = document.getElementById('messageBox');
+        const messageText = document.getElementById('messageText');
+        const closeMessageBoxButton = document.getElementById('closeMessageBox');
+
+        const authOverlay = document.getElementById('authOverlay');
+        const authTitle = document.getElementById('authTitle');
+        const authNameInput = document.getElementById('authName');
+        const authEmailInput = document.getElementById('authEmail');
+        const authPasswordInput = document.getElementById('authPassword');
+        const authSubmitButton = document.getElementById('authSubmit');
+        const authError = document.getElementById('authError');
+        const toggleAuthMode = document.getElementById('toggleAuthMode');
+        const toggleAuthModeText = document.getElementById('toggleAuthModeText');
+        const mainContainer = document.querySelector('.container');
+
+        const orderTotalsSummaryDiv = document.getElementById('orderTotalsSummary');
+        const totalNonGlowSpan = document.getElementById('totalNonGlow');
+        const totalGlowSpan = document.getElementById('totalGlow');
+        const totalEnvelopeSpan = document.getElementById('totalEnvelope');
+
+        const userIdDisplay = document.getElementById('userIdDisplay');
+        const currentUserNameSpan = document.getElementById('currentUserName');
+        const logoutButton = document.getElementById('logoutButton');
+
+        const orderHistoryListDesktop = document.getElementById('orderHistoryListDesktop');
+        const emptyOrderHistoryMessageDesktop = document.getElementById('emptyOrderHistoryMessageDesktop');
+        const orderHistoryListMobile = document.getElementById('orderHistoryListMobile');
+        const emptyOrderHistoryMessageMobile = document.getElementById('emptyOrderHistoryMessageMobile');
+
+        const floatingOrderHistoryBtn = document.getElementById('floatingOrderHistoryBtn');
+        const orderHistoryModal = document.getElementById('orderHistoryModal');
+        const orderHistoryModalCloseBtn = document.getElementById('orderHistoryModalCloseBtn');
+
+        const generateProofBtn = document.getElementById('generateProofBtn');
+        const proofModal = document.getElementById('proofModal');
+        const closeProofModal = document.getElementById('closeProofModal');
+        const proofContent = document.getElementById('proofContent');
+        const approveProofBtn = document.getElementById('approveProofBtn');
+        const reviseOrderBtn = document.getElementById('reviseOrderBtn');
+
+        const customFileUploadInput = document.getElementById('customFileUpload');
+        // Custom Quantity Input
+        const customQuantityInput = document.getElementById('customQuantityInput');
+        const uploadCustomFileBtn = document.getElementById('uploadCustomFileBtn');
+        const customUploadList = document.getElementById('customUploadList');
+
+        let isLoginMode = true;
+        let app, db, auth, storage;
+        let currentUserId = null;
+        let currentUserEmail = null;
+        let currentUserNameDisplay = null;
+        let isAuthReady = false;
+
+
+        // --- PERSISTENCE & RESTORE LOGIC ---
+
+        function saveCartLocally() {
+            localStorage.setItem('cg_portal_cart', JSON.stringify(currentOrder));
         }
-        loadingIndicator.classList.add('hidden');
-      } catch (error) {
-        console.error('Error fetching product catalog:', error);
-        loadingIndicator.classList.add('hidden');
-        showMessageBox('Error loading product catalog. Please try refreshing or contact support.');
-      }
-    }
 
-    function showMessageBox(message) {
-      messageText.textContent = message;
-      messageBox.classList.remove('hidden');
-    }
+        function loadCartLocally() {
+            const saved = localStorage.getItem('cg_portal_cart');
+            if (saved) {
+                try {
+                    currentOrder = JSON.parse(saved);
+                    renderOrderList();
+                } catch (e) {
+                    console.error("Error loading local cart:", e);
+                }
+            }
+        }
 
-    function hideMessageBox() {
-      messageBox.classList.add('hidden');
-    }
+        // --- UTILITY FUNCTIONS ---
 
-    function renderProductCard(product) {
-      const productId = product.id || `unknown-id-${Math.random().toString(36).substring(7)}`;
-      const uniqueId = productId.replace(/[^a-zA-Z0-9-_]/g, '');
-      const initialQuantity = (product.sku === ENVELOPE_SKU) ? 1 : 100;
-      const minQuantity = (product.sku === ENVELOPE_SKU) ? 1 : 1;
+        function parseCSV(csvText) {
+            const lines = csvText.trim().split(/\r?\n/);
+            if (lines.length === 0) return [];
 
-      return `
+            const csvSplitRegex = /,(?=(?:(?:[^"]*"){2})*[^"]*$)/;
+            const rawHeaders = lines[0].split(csvSplitRegex);
+            const headers = rawHeaders.map(header => header.trim().replace(/^"|"$/g, '')).filter(header => header !== '');
+            if (headers.length === 0) {
+                console.error('ERROR: No valid headers found.');
+                showMessageBox('Error: Product catalog headers are malformed or missing.');
+                return [];
+            }
+            const data = [];
+            for (let i = 1; i < lines.length; i++) {
+                const line = lines[i].trim();
+                if (line === '') continue;
+
+                const values = [];
+                let current = '';
+                let inQuote = false;
+                for (let j = 0; j < line.length; j++) {
+                    const char = line[j];
+                    if (char === '"') {
+                        inQuote = !inQuote;
+                    } else if (char === ',' && !inQuote) {
+                        values.push(current.trim().replace(/^"|"$/g, ''));
+                        current = '';
+                    } else {
+                        current += char;
+                    }
+                }
+                values.push(current.trim().replace(/^"|"$/g, ''));
+
+                if (values.length !== headers.length) continue;
+
+                const rowObject = {};
+                headers.forEach((header, index) => {
+                    if (header === 'searchTerms') {
+                        rowObject[header] = values[index].split(',').map(term => term.trim().toLowerCase()).filter(term => term !== '');
+                    } else {
+                        rowObject[header] = values[index];
+                    }
+                });
+                data.push(rowObject);
+            }
+            return data;
+        }
+
+        async function fetchProductCatalog() {
+            try {
+                loadingIndicator.textContent = 'Loading product catalog...';
+                loadingIndicator.classList.remove('hidden');
+                const response = await fetch(GOOGLE_SHEET_CSV_URL);
+                if (!response.ok) {
+                    throw new Error(`Failed to fetch product catalog: ${response.statusText}`);
+                }
+                const csvText = await response.text();
+                productCatalog = parseCSV(csvText);
+                const envelopeItem = {
+                    id: ENVELOPE_SKU,
+                    title: 'Custom Sticker Envelopes',
+                    sku: ENVELOPE_SKU,
+                    imageUrl: 'https://storage.googleapis.com/cg-portal-assets/CG-SE1%20White%20Bubble%20Sticker%20Envelope.png',
+                    searchTerms: ['envelope', 'envelopes', ENVELOPE_SKU.toLowerCase()]
+                };
+                if (!productCatalog.some(item => item.id === envelopeItem.id)) {
+                    productCatalog.push(envelopeItem);
+                }
+                loadingIndicator.classList.add('hidden');
+            } catch (error) {
+                console.error('Error fetching product catalog:', error);
+                loadingIndicator.classList.add('hidden');
+                showMessageBox('Error loading product catalog. Please try refreshing or contact support.');
+            }
+        }
+
+        function showMessageBox(message) {
+            messageText.textContent = message;
+            messageBox.classList.remove('hidden');
+        }
+
+        function hideMessageBox() {
+            messageBox.classList.add('hidden');
+        }
+
+        function renderProductCard(product) {
+            const productId = product.id || `unknown-id-${Math.random().toString(36).substring(7)}`;
+            const uniqueId = productId.replace(/[^a-zA-Z0-9-_]/g, '');
+            const initialQuantity = (product.sku === ENVELOPE_SKU) ? 1 : 100;
+            const minQuantity = (product.sku === ENVELOPE_SKU) ? 1 : 1;
+
+            return `
                 <div class="w-full sm:w-56 lg:w-64 flex flex-col items-center bg-gray-50 border border-gray-200 rounded-lg p-4 shadow-sm text-center">
                     <img src="${product.imageUrl}" alt="${product.title}" class="w-20 h-20 object-contain rounded-lg mb-4 flex-shrink-0" onerror="this.onerror=null;this.src='https://placehold.co/100x100/CCCCCC/000000?text=No+Image';">
                     <div class="flex-grow w-full">
@@ -798,273 +776,253 @@
                     </div>
                 </div>
             `;
+        }}
+
+function renderOrderItem(item) {
+return `
+<div class="p-4 flex justify-between items-center hover:bg-gray-50 transition duration-150" data-item-id="${item.id}">
+    <div class="flex items-center space-x-3 flex-grow min-w-0">
+        ${item.isCustom ?
+        `<img src="${item.fileUrl || 'https://placehold.co/50x50/indigo/white?text=Custom'}" alt="Custom Upload"
+            class="w-10 h-10 object-contain rounded-lg flex-shrink-0">`
+        : ''}
+        <div class="min-w-0">
+            <p class="text-sm font-semibold text-gray-800 truncate">${item.title}</p>
+            <p class="text-xs text-gray-500">${item.sku}</p>
+            ${item.isCustom && item.fileUrl ? `<p class="text-xs text-blue-500 truncate">File: ${item.title}</p>` : ''}
+        </div>
+    </div>
+    <div class="flex items-center space-x-4 flex-shrink-0">
+        <input type="number" value="${item.quantity}" min="1" data-item-id="${item.id}"
+            class="w-16 p-2 border border-gray-300 rounded-lg text-center text-sm quantity-input">
+        <button class="text-red-500 hover:text-red-700 transition duration-150 remove-item-btn"
+            data-item-id="${item.id}">
+            &times;
+        </button>
+    </div>
+</div>
+`;
+}
+
+function renderOrderList() {
+if (currentOrder.length === 0) {
+orderListDiv.innerHTML = `<div class="p-4 text-gray-500 text-center" id="emptyOrderMessage">No items in your order yet.
+</div>`;
+orderTotalsSummaryDiv.classList.add('hidden');
+submitOrderButton.classList.add('hidden');
+generateProofBtn.classList.remove('hidden');
+return;
+}
+
+const listHtml = currentOrder.map(renderOrderItem).join('');
+orderListDiv.innerHTML = listHtml;
+orderTotalsSummaryDiv.classList.remove('hidden');
+
+orderListDiv.querySelectorAll('.quantity-input').forEach(input => {
+input.addEventListener('change', updateQuantity);
+input.addEventListener('input', updateQuantity);
+});
+orderListDiv.querySelectorAll('.remove-item-btn').forEach(button => {
+button.addEventListener('click', removeItem);
+});
+
+updateOrderTotals();
+}
+
+function updateOrderTotals() {
+let totalNonGlow = 0;
+let totalGlow = 0;
+let totalEnvelope = 0;
+
+currentOrder.forEach(item => {
+const qty = parseInt(item.quantity) || 0;
+if (item.sku === ENVELOPE_SKU) {
+totalEnvelope += qty;
+} else if (item.isGlow || (item.title && item.title.toLowerCase().includes('glow'))) {
+totalGlow += qty;
+} else {
+totalNonGlow += qty;
+}
+});
+
+totalNonGlowSpan.textContent = totalNonGlow.toLocaleString();
+totalGlowSpan.textContent = totalGlow.toLocaleString();
+totalEnvelopeSpan.textContent = totalEnvelope.toLocaleString();
+}
+
+function addItem(product, quantity) {
+const existingItemIndex = currentOrder.findIndex(item => item.sku === product.sku && !item.isCustom);
+
+if (existingItemIndex > -1) {
+const updatedItem = currentOrder.splice(existingItemIndex, 1)[0];
+updatedItem.quantity += quantity;
+currentOrder.unshift(updatedItem);
+} else {
+const newItem = {
+id: product.id,
+sku: product.sku,
+title: product.title,
+quantity: quantity,
+isCustom: false,
+isGlow: product.title.toLowerCase().includes('glow in the dark')
+};
+currentOrder.unshift(newItem);
+}
+saveCartLocally();
+renderOrderList();
+}
+
+function updateQuantity(event) {
+const itemId = event.target.dataset.itemId;
+let newQuantity = parseInt(event.target.value, 10);
+
+if (isNaN(newQuantity) || newQuantity < 1) { newQuantity=1; event.target.value=1; } const item=currentOrder.find(i=>
+    i.id === itemId);
+    if (item) {
+    item.quantity = newQuantity;
+    updateOrderTotals();
+    saveCartLocally();
     }
-
-    function renderOrderItem(item) {
-      return `
-                <div class="p-4 flex justify-between items-center hover:bg-gray-50 transition duration-150" data-item-id="${item.id}">
-                    <div class="flex items-center space-x-3 flex-grow min-w-0">
-                        ${item.isCustom ?
-          `<img src="${item.fileUrl || 'https://placehold.co/50x50/indigo/white?text=Custom'}" 
-                                 alt="Custom Upload" class="w-10 h-10 object-contain rounded-lg flex-shrink-0">`
-          : ''}
-                        <div class="min-w-0">
-                            <p class="text-sm font-semibold text-gray-800 truncate">${item.title}</p>
-                            <p class="text-xs text-gray-500">${item.sku}</p>
-                            ${item.isCustom && item.fileUrl ? `<p class="text-xs text-blue-500 truncate">File: ${item.title}</p>` : ''}
-                        </div>
-                    </div>
-                    <div class="flex items-center space-x-4 flex-shrink-0">
-                        <input type="number" value="${item.quantity}" min="1" data-item-id="${item.id}"
-                            class="w-16 p-2 border border-gray-300 rounded-lg text-center text-sm quantity-input">
-                        <button class="text-red-500 hover:text-red-700 transition duration-150 remove-item-btn" data-item-id="${item.id}">
-                            &times;
-                        </button>
-                    </div>
-                </div>
-            `;
-    }
-
-    function renderOrderList() {
-      if (currentOrder.length === 0) {
-        orderListDiv.innerHTML = `<div class="p-4 text-gray-500 text-center" id="emptyOrderMessage">No items in your order yet.</div>`;
-        orderTotalsSummaryDiv.classList.add('hidden');
-        submitOrderButton.classList.add('hidden');
-        generateProofBtn.classList.remove('hidden');
-        return;
-      }
-
-      const listHtml = currentOrder.map(renderOrderItem).join('');
-      orderListDiv.innerHTML = listHtml;
-      orderTotalsSummaryDiv.classList.remove('hidden');
-
-      orderListDiv.querySelectorAll('.quantity-input').forEach(input => {
-        input.addEventListener('change', updateQuantity);
-        input.addEventListener('input', updateQuantity);
-      });
-      orderListDiv.querySelectorAll('.remove-item-btn').forEach(button => {
-        button.addEventListener('click', removeItem);
-      });
-
-      updateOrderTotals();
-    }
-
-    function updateOrderTotals() {
-      let totalNonGlow = 0;
-      let totalGlow = 0;
-      let totalEnvelope = 0;
-
-      currentOrder.forEach(item => {
-        const qty = parseInt(item.quantity) || 0;
-        if (item.sku === ENVELOPE_SKU) {
-          totalEnvelope += qty;
-        } else if (item.isGlow || (item.title && item.title.toLowerCase().includes('glow in the dark'))) {
-          totalGlow += qty;
-        } else {
-          totalNonGlow += qty;
-        }
-      });
-
-      totalNonGlowSpan.textContent = totalNonGlow.toLocaleString();
-      totalGlowSpan.textContent = totalGlow.toLocaleString();
-      totalEnvelopeSpan.textContent = totalEnvelope.toLocaleString();
-    }
-
-    function addItem(product, quantity) {
-      const existingItemIndex = currentOrder.findIndex(item => item.sku === product.sku && !item.isCustom);
-
-      if (existingItemIndex > -1) {
-        currentOrder[existingItemIndex].quantity += quantity;
-        // Move updated item to top? User requested "newest first".
-        // If it already exists, maybe just updating qty is fine, or should we move it to top?
-        // Let's keep strict "Add" behavior -> if new item added, top. If existing updated, stay?
-        // Actually user said "once an item has been added... listed as newest first". 
-        // Let's assume updating an existing item bumps it to the top too for clarity.
-        const updatedItem = currentOrder.splice(existingItemIndex, 1)[0];
-        currentOrder.unshift(updatedItem);
-      } else {
-        const newItem = {
-          id: product.id,
-          sku: product.sku,
-          title: product.title,
-          quantity: quantity,
-          isCustom: false,
-          isGlow: product.title.toLowerCase().includes('glow in the dark')
-        };
-        // ADD TO TOP (Unshift instead of push)
-        currentOrder.unshift(newItem);
-      }
-      saveCartLocally();
-      renderOrderList();
-      // REMOVED CONFIRMATION POPUP per user request
-      // showMessageBox(`${quantity} x ${product.title} added to order!`);
-    }
-
-    function updateQuantity(event) {
-      const itemId = event.target.dataset.itemId;
-      let newQuantity = parseInt(event.target.value, 10);
-
-      if (isNaN(newQuantity) || newQuantity < 1) {
-        newQuantity = 1;
-        event.target.value = 1;
-      }
-
-      const item = currentOrder.find(i => i.id === itemId);
-      if (item) {
-        item.quantity = newQuantity;
-        updateOrderTotals();
-        saveCartLocally();
-      }
     }
 
     function removeItem(event) {
-      const itemId = event.target.dataset.itemId;
-      currentOrder = currentOrder.filter(item => item.id !== itemId);
-      saveCartLocally();
-      renderOrderList();
+    const itemId = event.target.dataset.itemId;
+    currentOrder = currentOrder.filter(item => item.id !== itemId);
+    saveCartLocally();
+    renderOrderList();
     }
 
     // --- CUSTOM UPLOAD LOGIC ---
 
     async function uploadFileAndAddToOrder() {
-      if (!isAuthReady || !currentUserId) {
-        showMessageBox("Please wait for authentication or log in before uploading files.");
-        return;
-      }
+    if (!isAuthReady || !currentUserId) {
+    showMessageBox("Please wait for authentication or log in before uploading files.");
+    return;
+    }
 
-      const files = customFileUploadInput.files;
-      const quantity = parseInt(customQuantityInput.value, 10);
+    const files = customFileUploadInput.files;
+    const quantity = parseInt(customQuantityInput.value, 10);
 
-      if (files.length === 0) {
-        showMessageBox("Please select at least one PNG file to upload.");
-        return;
-      }
+    if (files.length === 0) {
+    showMessageBox("Please select at least one PNG file to upload.");
+    return;
+    }
 
-      if (isNaN(quantity) || quantity < 100) {
-        showMessageBox("Please enter a valid quantity for custom designs (Minimum 100).");
-        return;
-      }
+    if (isNaN(quantity) || quantity < 100) { showMessageBox("Please enter a valid quantity for custom designs (Minimum
+        100)."); return; }
+        customUploadList.innerHTML='<div class="text-center text-indigo-600">Starting upload...</div>' ;
+        uploadCustomFileBtn.disabled=true; const uploadListItems=[]; try { const
+        uploadPromises=Array.from(files).map(async (file)=> {
+        const statusId = `upload-status-${Math.random().toString(36).substring(2, 9)}`;
+        uploadListItems.push({ id: statusId, name: file.name, status: 'Uploading...' });
+        customUploadList.innerHTML = uploadListItems.map(i => `<div id="${i.id}"
+            class="flex justify-between items-center p-2 bg-white border border-indigo-200 rounded-lg shadow-sm text-sm">
+            <span class="font-medium truncate">${i.name} (Qty: ${quantity})</span><span
+                class="text-indigo-600">${i.status}</span></div>`).join('');
 
-      customUploadList.innerHTML = '<div class="text-center text-indigo-600">Starting upload...</div>';
-      uploadCustomFileBtn.disabled = true;
+        const storageRef = ref(storage, `custom-uploads/${currentUserId}/${Date.now()}-${file.name}`);
+        const snapshot = await uploadBytes(storageRef, file);
+        const fileUrl = await getDownloadURL(snapshot.ref);
 
-      const uploadListItems = [];
+        const newItem = {
+        id: `CUSTOM-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`,
+        sku: `CUSTOM-${file.name}`,
+        title: file.name,
+        isCustom: true,
+        quantity: quantity,
+        fileUrl: fileUrl,
+        isGlow: file.name.toLowerCase().includes('glow')
+        };
 
-      try {
-        const uploadPromises = Array.from(files).map(async (file) => {
-          const statusId = `upload-status-${Math.random().toString(36).substring(2, 9)}`;
-          uploadListItems.push({ id: statusId, name: file.name, status: 'Uploading...' });
-          customUploadList.innerHTML = uploadListItems.map(i => `<div id="${i.id}" class="flex justify-between items-center p-2 bg-white border border-indigo-200 rounded-lg shadow-sm text-sm"><span class="font-medium truncate">${i.name} (Qty: ${quantity})</span><span class="text-indigo-600">${i.status}</span></div>`).join('');
-
-          const storageRef = ref(storage, `custom-uploads/${currentUserId}/${Date.now()}-${file.name}`);
-          const snapshot = await uploadBytes(storageRef, file);
-          const fileUrl = await getDownloadURL(snapshot.ref);
-
-          const newItem = {
-            id: `CUSTOM-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`,
-            sku: `CUSTOM-${file.name}`,
-            title: file.name,
-            isCustom: true,
-            quantity: quantity,
-            fileUrl: fileUrl,
-            isGlow: file.name.toLowerCase().includes('glow')
-          };
-
-          // ADD TO TOP
-          currentOrder.unshift(newItem);
-          saveCartLocally();
+        currentOrder.unshift(newItem);
+        saveCartLocally();
 
 
-          const statusItem = document.getElementById(statusId);
-          if (statusItem) {
-            statusItem.querySelector('span:last-child').textContent = '✔ Added';
-            statusItem.classList.remove('border-indigo-200');
-            statusItem.classList.add('border-green-400');
-          }
+        const statusItem = document.getElementById(statusId);
+        if (statusItem) {
+        statusItem.querySelector('span:last-child').textContent = '✔ Added';
+        statusItem.classList.remove('border-indigo-200');
+        statusItem.classList.add('border-green-400');
+        }
 
-          return fileUrl;
+        return fileUrl;
         });
 
         await Promise.all(uploadPromises);
         renderOrderList();
         customFileUploadInput.value = '';
         customQuantityInput.value = '2000';
-        // REMOVED POPUP for upload success too? 
-        // "There needs to be no confirmation pop up ... once they select an item to the order."
-        // Custom upload is technically "selecting an item", but it takes time. 
-        // I'll leave a small message box for upload success as it's an async process and confirmation is good, but user might want it gone.
-        // Re-reading: "no confirmation pop up ... once they select an item to the order."
-        // I will show it for uploads because it's a batch process and they need to know when it *finished*.
         // showMessageBox(`${files.length} custom design(s) added to order!`);
-      } catch (error) {
+        } catch (error) {
         console.error("Error during custom file upload:", error);
-        customUploadList.innerHTML += `<div class="p-2 text-sm text-red-600 bg-red-100 rounded-lg mt-2">Upload Failed: ${error.message}</div>`;
+        customUploadList.innerHTML += `<div class="p-2 text-sm text-red-600 bg-red-100 rounded-lg mt-2">Upload Failed:
+            ${error.message}</div>`;
         showMessageBox(`Failed to upload file(s): ${error.message}`);
-      } finally {
+        } finally {
         uploadCustomFileBtn.disabled = false;
-      }
-    }
+        }
+        }
 
-    // --- ORDER ID LOGIC ---
+        // --- ORDER ID LOGIC ---
 
-    async function getNewOrderId() {
-      const counterRef = doc(db, COUNTER_DOC_PATH);
-      let newCount = 0;
+        async function getNewOrderId() {
+        const counterRef = doc(db, COUNTER_DOC_PATH);
+        let newCount = 0;
 
-      try {
+        try {
         await runTransaction(db, async (transaction) => {
-          const counterDoc = await transaction.get(counterRef);
+        const counterDoc = await transaction.get(counterRef);
 
-          if (!counterDoc.exists()) {
-            newCount = 1;
-            transaction.set(counterRef, { count: newCount });
-          } else {
-            newCount = counterDoc.data().count + 1;
-            transaction.update(counterRef, { count: newCount });
-          }
+        if (!counterDoc.exists()) {
+        newCount = 1;
+        transaction.set(counterRef, { count: newCount });
+        } else {
+        newCount = counterDoc.data().count + 1;
+        transaction.update(counterRef, { count: newCount });
+        }
         });
         return `ORD-${newCount.toString().padStart(4, '0')}`;
-      } catch (e) {
+        } catch (e) {
         console.error("Transaction failed: ", e);
         return `ORD-ERR-${Date.now()}`;
-      }
-    }
+        }
+        }
 
-    // --- SUBMISSION ---
+        // --- SUBMISSION ---
 
-    async function submitOrderToFirestore() {
-      if (currentOrder.length === 0) {
+        async function submitOrderToFirestore() {
+        if (currentOrder.length === 0) {
         showMessageBox('Your order is empty. Please add items before submitting.');
         return;
-      }
+        }
 
-      const customerName = customerNameInput.value.trim();
-      const customerEmail = customerEmailInput.value.trim();
-      const customerNotes = customerNotesInput.value.trim();
+        const customerName = customerNameInput.value.trim();
+        const customerEmail = customerEmailInput.value.trim();
+        const customerNotes = customerNotesInput.value.trim();
 
-      if (!customerName || !customerEmail) {
+        if (!customerName || !customerEmail) {
         showMessageBox('Please ensure your Name and Email are entered.');
         return;
-      }
+        }
 
-      submitOrderButton.disabled = true;
-      submitOrderButton.textContent = 'Submitting...';
+        submitOrderButton.disabled = true;
+        submitOrderButton.textContent = 'Submitting...';
 
-      try {
+        try {
         const sequentialOrderId = await getNewOrderId();
 
         const orderData = {
-          orderId: sequentialOrderId,
-          userId: currentUserId,
-          customerName: customerName,
-          customerEmail: customerEmail,
-          notes: customerNotes,
-          orderItems: currentOrder,
-          totalNonGlow: parseInt(totalNonGlowSpan.textContent.replace(/,/g, ''), 10),
-          totalGlow: parseInt(totalGlowSpan.textContent.replace(/,/g, ''), 10),
-          totalEnvelope: parseInt(totalEnvelopeSpan.textContent.replace(/,/g, ''), 10),
-          status: 'New',
-          timestamp: serverTimestamp()
+        orderId: sequentialOrderId,
+        userId: currentUserId,
+        customerName: customerName,
+        customerEmail: customerEmail,
+        notes: customerNotes,
+        orderItems: currentOrder,
+        totalNonGlow: parseInt(totalNonGlowSpan.textContent.replace(/,/g, ''), 10),
+        totalGlow: parseInt(totalGlowSpan.textContent.replace(/,/g, ''), 10),
+        totalEnvelope: parseInt(totalEnvelopeSpan.textContent.replace(/,/g, ''), 10),
+        status: 'New',
+        timestamp: serverTimestamp()
         };
 
         await addDoc(collection(db, ORDERS_COLLECTION_PATH), orderData);
@@ -1082,388 +1040,391 @@
 
         showMessageBox(`Order **${sequentialOrderId}** submitted successfully! A confirmation email has been sent.`);
 
-      } catch (error) {
+        } catch (error) {
         console.error("Error submitting order:", error);
         showMessageBox(`Failed to submit order. Error: ${error.message}`);
-      } finally {
+        } finally {
         submitOrderButton.disabled = false;
         submitOrderButton.textContent = 'Submit Order';
-      }
-    }
+        }
+        }
 
-    async function sendEmailNotifications(orderData) {
-      const adminEmailBody = `
-                New Order Received: ${orderData.orderId}
-                Customer: ${orderData.customerName} (${orderData.customerEmail})
-                User ID: ${orderData.userId}
-                ---
-                Total Non-Glow Quantity: ${orderData.totalNonGlow.toLocaleString()}
-                Total Glow Quantity: ${orderData.totalGlow.toLocaleString()}
-                Total Envelopes (in 1000s): ${orderData.totalEnvelope.toLocaleString()}
-                ---
-                Notes: ${orderData.notes || 'None'}
-                ---
-                Items:
-                ${orderData.orderItems.map(item => `- ${item.quantity.toLocaleString()} x ${item.title} (${item.sku}) ${item.isCustom ? `[CUSTOM UPLOAD: ${item.fileUrl}]` : ''}`).join('\n')}
-            `;
+        async function sendEmailNotifications(orderData) {
+        const adminEmailBody = `
+        New Order Received: ${orderData.orderId}
+        Customer: ${orderData.customerName} (${orderData.customerEmail})
+        User ID: ${orderData.userId}
+        ---
+        Total Non-Glow Quantity: ${orderData.totalNonGlow.toLocaleString()}
+        Total Glow Quantity: ${orderData.totalGlow.toLocaleString()}
+        Total Envelopes (in 1000s): ${orderData.totalEnvelope.toLocaleString()}
+        ---
+        Notes: ${orderData.notes || 'None'}
+        ---
+        Items:
+        ${orderData.orderItems.map(item => `- ${item.quantity.toLocaleString()} x ${item.title} (${item.sku})
+        ${item.isCustom ? `[CUSTOM UPLOAD: ${item.fileUrl}]` : ''}`).join('\n')}
+        `;
 
-      const customerEmailBody = `
-                Thank you for your order!
-                Order ID: ${orderData.orderId}
-                ---
-                Items:
-                ${orderData.orderItems.map(item => `- ${item.quantity.toLocaleString()} x ${item.title} (${item.sku})`).join('\n')}
-            `;
+        const customerEmailBody = `
+        Thank you for your order!
+        Order ID: ${orderData.orderId}
+        ---
+        Items:
+        ${orderData.orderItems.map(item => `- ${item.quantity.toLocaleString()} x ${item.title}
+        (${item.sku})`).join('\n')}
+        `;
 
-      const adminParams = {
+        const adminParams = {
         order_id: orderData.orderId,
         customer_name: orderData.customerName,
         customer_email: orderData.customerEmail,
         message_html: adminEmailBody.replace(/\n/g, '<br>'),
         to_email: 'admin@example.com'
-      };
+        };
 
-      const customerParams = {
+        const customerParams = {
         order_id: orderData.orderId,
         customer_name: orderData.customerName,
         customer_email: orderData.customerEmail,
         message_html: customerEmailBody.replace(/\n/g, '<br>'),
         to_email: orderData.customerEmail
-      };
+        };
 
-      await emailjs.send(EMAILJS_SERVICE_ID, EMAILJS_TEMPLATE_ID_ADMIN, adminParams, EMAILJS_USER_ID);
-      await emailjs.send(EMAILJS_SERVICE_ID, EMAILJS_TEMPLATE_ID_CUSTOMER, customerParams, EMAILJS_USER_ID);
-    }
+        await emailjs.send(EMAILJS_SERVICE_ID, EMAILJS_TEMPLATE_ID_ADMIN, adminParams, EMAILJS_USER_ID);
+        await emailjs.send(EMAILJS_SERVICE_ID, EMAILJS_TEMPLATE_ID_CUSTOMER, customerParams, EMAILJS_USER_ID);
+        }
 
-    // --- LISTENERS ---
+        // --- LISTENERS ---
 
-    searchButton.addEventListener('click', () => {
-      const searchTerm = searchInput.value.toLowerCase().trim();
-      if (searchTerm.length < 2) {
-        searchResultsDiv.innerHTML = '<p class="text-red-500">Please enter at least 2 characters to search.</p>';
-        noResultsDiv.classList.add('hidden');
-        return;
-      }
+        searchButton.addEventListener('click', () => {
+        const searchTerm = searchInput.value.toLowerCase().trim();
+        if (searchTerm.length < 2) {
+            searchResultsDiv.innerHTML='<p class="text-red-500">Please enter at least 2 characters to search.</p>' ;
+            noResultsDiv.classList.add('hidden'); return; } const results=productCatalog.filter(product=> {
+            if (product.sku && product.sku.toLowerCase().includes(searchTerm)) return true;
+            if (product.title && product.title.toLowerCase().includes(searchTerm)) return true;
+            if (product.searchTerms && product.searchTerms.some(term => term.includes(searchTerm))) return true;
+            return false;
+            });
 
-      const results = productCatalog.filter(product => {
-        if (product.sku && product.sku.toLowerCase().includes(searchTerm)) return true;
-        if (product.title && product.title.toLowerCase().includes(searchTerm)) return true;
-        if (product.searchTerms && product.searchTerms.some(term => term.includes(searchTerm))) return true;
-        return false;
-      });
+            searchResultsDiv.innerHTML = results.map(renderProductCard).join('');
+            noResultsDiv.classList.toggle('hidden', results.length > 0);
 
-      searchResultsDiv.innerHTML = results.map(renderProductCard).join('');
-      noResultsDiv.classList.toggle('hidden', results.length > 0);
+            searchResultsDiv.querySelectorAll('button').forEach(button => {
+            button.addEventListener('click', (event) => {
+            const productId = event.target.dataset.productId;
+            const product = productCatalog.find(p => p.id === productId);
+            const uniqueId = productId.replace(/[^a-zA-Z0-9-_]/g, '');
+            const quantityInput = document.getElementById(`qty-${uniqueId}`);
+            const quantity = parseInt(quantityInput.value, 10);
 
-      searchResultsDiv.querySelectorAll('button').forEach(button => {
-        button.addEventListener('click', (event) => {
-          const productId = event.target.dataset.productId;
-          const product = productCatalog.find(p => p.id === productId);
-          const uniqueId = productId.replace(/[^a-zA-Z0-9-_]/g, '');
-          const quantityInput = document.getElementById(`qty-${uniqueId}`);
-          const quantity = parseInt(quantityInput.value, 10);
-
-          if (product && quantity && quantity >= 1) {
+            if (product && quantity && quantity >= 1) {
             addItem(product, quantity);
-          } else {
+            } else {
             showMessageBox('Please enter a valid quantity.');
-          }
-        });
-      });
-    });
+            }
+            });
+            });
+            });
 
-    uploadCustomFileBtn.addEventListener('click', uploadFileAndAddToOrder);
+            uploadCustomFileBtn.addEventListener('click', uploadFileAndAddToOrder);
 
-    closeMessageBoxButton.addEventListener('click', hideMessageBox);
-    approveProofBtn.addEventListener('click', submitOrderToFirestore);
-    reviseOrderBtn.addEventListener('click', () => proofModal.classList.add('hidden'));
+            closeMessageBoxButton.addEventListener('click', hideMessageBox);
+            approveProofBtn.addEventListener('click', submitOrderToFirestore);
+            reviseOrderBtn.addEventListener('click', () => proofModal.classList.add('hidden'));
 
-    generateProofBtn.addEventListener('click', () => {
-      if (currentOrder.length === 0) {
-        showMessageBox('Your order is empty. Please add items before reviewing.');
-        return;
-      }
-      if (!customerNameInput.value.trim() || !customerEmailInput.value.trim()) {
-        showMessageBox('Please enter your Name and Email before reviewing the order.');
-        return;
-      }
+            generateProofBtn.addEventListener('click', () => {
+            if (currentOrder.length === 0) {
+            showMessageBox('Your order is empty. Please add items before reviewing.');
+            return;
+            }
+            if (!customerNameInput.value.trim() || !customerEmailInput.value.trim()) {
+            showMessageBox('Please enter your Name and Email before reviewing the order.');
+            return;
+            }
 
-      proofContent.innerHTML = `
-                <div class="w-full text-left mb-4">
-                    <h4 class="font-bold text-lg text-gray-800">Customer: ${customerNameInput.value}</h4>
-                    <p class="text-sm text-gray-600">Email: ${customerEmailInput.value}</p>
-                    <p class="text-sm text-gray-600">Notes: ${customerNotesInput.value || 'None'}</p>
-                    <hr class="my-2">
-                    <p class="text-sm font-semibold">Total Non-Glow: ${totalNonGlowSpan.textContent}</p>
-                    <p class="text-sm font-semibold">Total Glow: ${totalGlowSpan.textContent}</p>
-                    <p class="text-sm font-semibold">Total Envelopes (x1000): ${totalEnvelopeSpan.textContent}</p>
-                    <hr class="my-2">
-                </div>
+            proofContent.innerHTML = `
+            <div class="w-full text-left mb-4">
+                <h4 class="font-bold text-lg text-gray-800">Customer: ${customerNameInput.value}</h4>
+                <p class="text-sm text-gray-600">Email: ${customerEmailInput.value}</p>
+                <p class="text-sm text-gray-600">Notes: ${customerNotesInput.value || 'None'}</p>
+                <hr class="my-2">
+                <p class="text-sm font-semibold">Total Non-Glow: ${totalNonGlowSpan.textContent}</p>
+                <p class="text-sm font-semibold">Total Glow: ${totalGlowSpan.textContent}</p>
+                <p class="text-sm font-semibold">Total Envelopes (x1000): ${totalEnvelopeSpan.textContent}</p>
+                <hr class="my-2">
+            </div>
             `;
 
-      currentOrder.forEach(item => {
-        const itemHtml = document.createElement('div');
-        itemHtml.className = 'proof-item';
+            currentOrder.forEach(item => {
+            const itemHtml = document.createElement('div');
+            itemHtml.className = 'proof-item';
 
-        const imageUrl = item.isCustom
-          ? item.fileUrl || 'https://placehold.co/100x100/indigo/white?text=Custom'
-          : productCatalog.find(p => p.sku === item.sku)?.imageUrl || 'https://placehold.co/100x100/CCCCCC/000000?text=No+Image';
+            const imageUrl = item.isCustom
+            ? item.fileUrl || 'https://placehold.co/100x100/indigo/white?text=Custom'
+            : productCatalog.find(p => p.sku === item.sku)?.imageUrl ||
+            'https://placehold.co/100x100/CCCCCC/000000?text=No+Image';
 
-        itemHtml.innerHTML = `
-                    <img src="${imageUrl}" alt="${item.title}" class="proof-item-img w-12 h-12">
-                    <div class="proof-item-details">
-                        <p class="font-bold text-gray-800">${item.quantity.toLocaleString()}</p>
-                        <p class="text-xs text-gray-700 truncate">${item.title}</p>
-                        <p class="text-xs text-gray-500">${item.sku}</p>
-                    </div>
-                `;
-        proofContent.appendChild(itemHtml);
-      });
+            itemHtml.innerHTML = `
+            <img src="${imageUrl}" alt="${item.title}" class="proof-item-img w-12 h-12">
+            <div class="proof-item-details">
+                <p class="font-bold text-gray-800">${item.quantity.toLocaleString()}</p>
+                <p class="text-xs text-gray-700 truncate">${item.title}</p>
+                <p class="text-xs text-gray-500">${item.sku}</p>
+            </div>
+            `;
+            proofContent.appendChild(itemHtml);
+            });
 
-      proofModal.classList.remove('hidden');
-    });
+            proofModal.classList.remove('hidden');
+            });
 
-    closeProofModal.addEventListener('click', () => proofModal.classList.add('hidden'));
-    approveProofBtn.addEventListener('click', async () => {
-      proofModal.classList.add('hidden');
-      await submitOrderToFirestore();
-    });
+            closeProofModal.addEventListener('click', () => proofModal.classList.add('hidden'));
+            approveProofBtn.addEventListener('click', async () => {
+            proofModal.classList.add('hidden');
+            await submitOrderToFirestore();
+            });
 
 
-    // --- AUTH & HISTORY ---
+            // --- AUTH & HISTORY ---
 
-    function toggleAuthModeHandler() {
-      isLoginMode = !isLoginMode;
-      authTitle.textContent = isLoginMode ? 'Login to Access Portal' : 'Sign Up for Portal';
-      authSubmit.textContent = isLoginMode ? 'Login' : 'Sign Up';
-      authNameInput.classList.toggle('hidden', isLoginMode);
-      toggleAuthModeText.textContent = isLoginMode ? "Don't have an account?" : "Already have an account?";
-      toggleAuthMode.textContent = isLoginMode ? "Sign Up" : "Login";
-      authError.classList.add('hidden');
-    }
+            function toggleAuthModeHandler() {
+            isLoginMode = !isLoginMode;
+            authTitle.textContent = isLoginMode ? 'Login to Access Portal' : 'Sign Up for Portal';
+            authSubmit.textContent = isLoginMode ? 'Login' : 'Sign Up';
+            authNameInput.classList.toggle('hidden', isLoginMode);
+            toggleAuthModeText.textContent = isLoginMode ? "Don't have an account?" : "Already have an account?";
+            toggleAuthMode.textContent = isLoginMode ? "Sign Up" : "Login";
+            authError.classList.add('hidden');
+            }
 
-    async function authSubmitHandler() {
-      const email = authEmailInput.value.trim();
-      const password = authPasswordInput.value.trim();
-      const name = authNameInput.value.trim();
+            async function authSubmitHandler() {
+            const email = authEmailInput.value.trim();
+            const password = authPasswordInput.value.trim();
+            const name = authNameInput.value.trim();
 
-      if (!email || !password || (!isLoginMode && !name)) {
-        authError.textContent = 'Please fill in all required fields.';
-        authError.classList.remove('hidden');
-        return;
-      }
+            if (!email || !password || (!isLoginMode && !name)) {
+            authError.textContent = 'Please fill in all required fields.';
+            authError.classList.remove('hidden');
+            return;
+            }
 
-      try {
-        authSubmitButton.disabled = true;
-        if (isLoginMode) {
-          await signInWithEmailAndPassword(auth, email, password);
-        } else {
-          await createUserWithEmailAndPassword(auth, email, password);
-          await setDoc(doc(db, `/artifacts/${appId}/users/${auth.currentUser.uid}/profile/details`), {
+            try {
+            authSubmitButton.disabled = true;
+            if (isLoginMode) {
+            await signInWithEmailAndPassword(auth, email, password);
+            } else {
+            await createUserWithEmailAndPassword(auth, email, password);
+            await setDoc(doc(db, `/artifacts/${appId}/users/${auth.currentUser.uid}/profile/details`), {
             name: name,
             email: email
-          }, { merge: true });
-        }
-      } catch (error) {
-        console.error("Auth error:", error.code, error.message);
-        authError.textContent = error.message.replace(/firebase: /i, '');
-        authError.classList.remove('hidden');
-      } finally {
-        authSubmitButton.disabled = false;
-      }
-      async function loadUserName(userId) {
-        try {
-          const docRef = doc(db, `/artifacts/${appId}/users/${userId}/profile/details`);
-          const docSnap = await getDoc(docRef);
+            }, { merge: true });
+            }
+            } catch (error) {
+            console.error("Auth error:", error.code, error.message);
+            authError.textContent = error.message.replace(/firebase: /i, '');
+            authError.classList.remove('hidden');
+            } finally {
+            authSubmitButton.disabled = false;
+            }
+            async function loadUserName(userId) {
+            try {
+            const docRef = doc(db, `/artifacts/${appId}/users/${userId}/profile/details`);
+            const docSnap = await getDoc(docRef);
 
-          let displayName = '';
-          if (docSnap.exists() && docSnap.data().name) {
+            let displayName = '';
+            if (docSnap.exists() && docSnap.data().name) {
             displayName = docSnap.data().name;
-          } else if (currentUserEmail) {
+            } else if (currentUserEmail) {
             displayName = currentUserEmail.split('@')[0]; // Use part of email before @
-          } else {
+            } else {
             displayName = `User ${userId.substring(0, 5)}...`;
-          }
+            }
 
-          currentUserNameDisplay = displayName;
-          // Format: Just "John" or "john@example.com" - Clean, no ID, no parenthesis.
-          const displayString = currentUserEmail ? (displayName === currentUserEmail.split('@')[0] ? currentUserEmail : displayName) : displayName;
-          currentUserNameSpan.textContent = displayString;
+            currentUserNameDisplay = displayName;
+            // Format: Just "John" or "john@example.com" - Clean, no ID, no parenthesis.
+            const displayString = currentUserEmail ? (displayName === currentUserEmail.split('@')[0] ? currentUserEmail
+            : displayName) : displayName;
+            currentUserNameSpan.textContent = displayString;
 
-          // Pre-fill form if needed
-          if (customerNameInput.value === '') {
+            // Pre-fill form if needed
+            if (customerNameInput.value === '') {
             customerNameInput.value = docSnap.exists() ? docSnap.data().name : '';
-          }
+            }
 
-        } catch (e) {
-          console.error("Error loading user name:", e);
-          currentUserNameSpan.textContent = currentUserEmail || 'Guest';
-          customerNameInput.value = currentUserEmail || '';
-        }
-      }
-      function setupOrderHistoryListener(userId) {
-        const q = query(collection(db, ORDERS_COLLECTION_PATH), where("userId", "==", userId));
+            } catch (e) {
+            console.error("Error loading user name:", e);
+            currentUserNameSpan.textContent = currentUserEmail || 'Guest';
+            customerNameInput.value = currentUserEmail || '';
+            }
+            }
+            function setupOrderHistoryListener(userId) {
+            const q = query(collection(db, ORDERS_COLLECTION_PATH), where("userId", "==", userId));
 
-        onSnapshot(q, (snapshot) => {
-          const orders = [];
-          snapshot.forEach((doc) => {
+            onSnapshot(q, (snapshot) => {
+            const orders = [];
+            snapshot.forEach((doc) => {
             orders.push({ id: doc.id, ...doc.data() });
-          });
-          renderOrderHistory(orders);
-        }, (error) => {
-          console.error("Error listening to order history:", error);
-        });
-      }
+            });
+            renderOrderHistory(orders);
+            }, (error) => {
+            console.error("Error listening to order history:", error);
+            });
+            }
 
-      function renderOrderHistory(orders) {
-        const sortedOrders = orders.sort((a, b) => (b.timestamp?.seconds || 0) - (a.timestamp?.seconds || 0));
+            function renderOrderHistory(orders) {
+            const sortedOrders = orders.sort((a, b) => (b.timestamp?.seconds || 0) - (a.timestamp?.seconds || 0));
 
-        const historyHtml = sortedOrders.map(order => {
-          const date = order.timestamp ? new Date(order.timestamp.seconds * 1000).toLocaleString() : 'N/A';
-          const totalItems = order.orderItems.reduce((sum, item) => sum + item.quantity, 0);
+            const historyHtml = sortedOrders.map(order => {
+            const date = order.timestamp ? new Date(order.timestamp.seconds * 1000).toLocaleString() : 'N/A';
+            const totalItems = order.orderItems.reduce((sum, item) => sum + item.quantity, 0);
 
-          const detailsHtml = order.orderItems.map(item => `
-                    <div class="text-sm border-b last:border-b-0 py-1 flex justify-between">
-                        <span class="text-gray-700 font-medium">${item.title}</span>
-                        <span class="text-gray-500">${item.quantity.toLocaleString()} x</span>
+            const detailsHtml = order.orderItems.map(item => `
+            <div class="text-sm border-b last:border-b-0 py-1 flex justify-between">
+                <span class="text-gray-700 font-medium">${item.title}</span>
+                <span class="text-gray-500">${item.quantity.toLocaleString()} x</span>
+            </div>
+            `).join('');
+
+            return `
+            <div class="order-history-card">
+                <button class="order-history-header group" data-order-id="${order.id}">
+                    <div class="flex flex-col items-start">
+                        <h4 class="text-lg font-bold">${order.orderId}</h4>
+                        <p class="text-xs font-light">${date}</p>
                     </div>
-                `).join('');
-
-          return `
-                    <div class="order-history-card">
-                        <button class="order-history-header group" data-order-id="${order.id}">
-                            <div class="flex flex-col items-start">
-                                <h4 class="text-lg font-bold">${order.orderId}</h4>
-                                <p class="text-xs font-light">${date}</p>
-                            </div>
-                            <span class="text-sm font-light">${totalItems.toLocaleString()} items</span>
-                        </button>
-                        <div class="order-history-details hidden" id="details-${order.id}">
-                            <p class="text-sm mb-2"><strong>Notes:</strong> ${order.notes || 'None'}</p>
-                            <p class="text-xs font-semibold mb-2 text-gray-600">Items Ordered:</p>
-                            <div class="divide-y divide-gray-200">
-                                ${detailsHtml}
-                            </div>
-                            <button class="reorder-btn" data-order-items='${JSON.stringify(order.orderItems)}'>
-                                Re-Order These Items
-                            </button>
-                        </div>
+                    <span class="text-sm font-light">${totalItems.toLocaleString()} items</span>
+                </button>
+                <div class="order-history-details hidden" id="details-${order.id}">
+                    <p class="text-sm mb-2"><strong>Notes:</strong> ${order.notes || 'None'}</p>
+                    <p class="text-xs font-semibold mb-2 text-gray-600">Items Ordered:</p>
+                    <div class="divide-y divide-gray-200">
+                        ${detailsHtml}
                     </div>
-                `;
-        }).join('');
+                    <button class="reorder-btn" data-order-items='${JSON.stringify(order.orderItems)}'>
+                        Re-Order These Items
+                    </button>
+                </div>
+            </div>
+            `;
+            }).join('');
 
-        orderHistoryListDesktop.innerHTML = historyHtml;
-        emptyOrderHistoryMessageDesktop.classList.toggle('hidden', sortedOrders.length > 0);
+            orderHistoryListDesktop.innerHTML = historyHtml;
+            emptyOrderHistoryMessageDesktop.classList.toggle('hidden', sortedOrders.length > 0);
 
-        orderHistoryListMobile.innerHTML = historyHtml;
-        emptyOrderHistoryMessageMobile.classList.toggle('hidden', sortedOrders.length > 0);
+            orderHistoryListMobile.innerHTML = historyHtml;
+            emptyOrderHistoryMessageMobile.classList.toggle('hidden', sortedOrders.length > 0);
 
-        [...orderHistoryListDesktop.querySelectorAll('.order-history-header'), ...orderHistoryListMobile.querySelectorAll('.order-history-header')].forEach(header => {
-          header.addEventListener('click', (e) => {
+            [...orderHistoryListDesktop.querySelectorAll('.order-history-header'),
+            ...orderHistoryListMobile.querySelectorAll('.order-history-header')].forEach(header => {
+            header.addEventListener('click', (e) => {
             const orderId = header.dataset.orderId;
             const detailsDiv = document.getElementById(`details-${orderId}`);
             detailsDiv.classList.toggle('hidden');
-          });
-        });
+            });
+            });
 
-        [...orderHistoryListDesktop.querySelectorAll('.reorder-btn'), ...orderHistoryListMobile.querySelectorAll('.reorder-btn')].forEach(button => {
-          button.addEventListener('click', (e) => {
+            [...orderHistoryListDesktop.querySelectorAll('.reorder-btn'),
+            ...orderHistoryListMobile.querySelectorAll('.reorder-btn')].forEach(button => {
+            button.addEventListener('click', (e) => {
             const orderItemsString = e.target.dataset.orderItems;
             if (orderItemsString) {
-              try {
-                const orderItems = JSON.parse(orderItemsString);
-                orderItems.forEach(item => {
-                  if (!item.isCustom) {
-                    addItem(item, item.quantity);
-                  }
-                });
-                saveCartLocally();
-                showMessageBox('Items added to your current order. Custom file designs need to be re-uploaded.');
-                orderHistoryModal.classList.add('hidden');
-              } catch (error) {
-                console.error('Error parsing reorder items:', error);
-                showMessageBox('Could not load reorder items due to a parsing error.');
-              }
+            try {
+            const orderItems = JSON.parse(orderItemsString);
+            orderItems.forEach(item => {
+            if (!item.isCustom) {
+            addItem(item, item.quantity);
             }
-          });
-        });
-      }
+            });
+            saveCartLocally();
+            showMessageBox('Items added to your current order. Custom file designs need to be re-uploaded.');
+            orderHistoryModal.classList.add('hidden');
+            } catch (error) {
+            console.error('Error parsing reorder items:', error);
+            showMessageBox('Could not load reorder items due to a parsing error.');
+            }
+            }
+            });
+            });
+            }
 
 
-      // --- INIT ---
+            // --- INIT ---
 
-      function initFirebase() {
-        try {
-          app = initializeApp(firebaseConfig);
-          db = getFirestore(app);
-          auth = getAuth(app);
-          storage = getStorage(app);
+            function initFirebase() {
+            try {
+            app = initializeApp(firebaseConfig);
+            db = getFirestore(app);
+            auth = getAuth(app);
+            storage = getStorage(app);
 
-          onAuthStateChanged(auth, (user) => {
+            onAuthStateChanged(auth, (user) => {
             if (user) {
-              currentUserId = user.uid;
-              currentUserEmail = user.email;
+            currentUserId = user.uid;
+            currentUserEmail = user.email;
 
-              loadUserName(currentUserId);
-              customerEmailInput.value = currentUserEmail;
-              setupOrderHistoryListener(currentUserId);
+            loadUserName(currentUserId);
+            customerEmailInput.value = currentUserEmail;
+            setupOrderHistoryListener(currentUserId);
 
-              authOverlay.classList.add('hidden');
-              mainContainer.classList.remove('hidden');
-              userIdDisplay.classList.remove('hidden');
-              isAuthReady = true;
+            authOverlay.classList.add('hidden');
+            mainContainer.classList.remove('hidden');
+            userIdDisplay.classList.remove('hidden');
+            isAuthReady = true;
 
-              fetchProductCatalog();
-              loadCartLocally();
+            fetchProductCatalog();
+            loadCartLocally();
 
-              // Version Indicator
-              const versionDisplay = document.createElement('div');
-              versionDisplay.className = 'fixed top-4 right-4 text-xs text-white bg-blue-600 px-2 py-1 rounded shadow-lg font-mono pointer-events-none z-[9999]';
-              versionDisplay.textContent = 'v1.2';
-              document.body.appendChild(versionDisplay);
+            // Version Indicator
+            const versionDisplay = document.createElement('div');
+            versionDisplay.className = 'fixed top-4 right-4 text-xs text-white bg-blue-600 px-2 py-1 rounded shadow-lg
+            font-mono pointer-events-none z-[9999]';
+            versionDisplay.textContent = 'v1.2';
+            document.body.appendChild(versionDisplay);
 
-              // Log for debugging permissions
-              console.log("App ID:", appId);
-              console.log("Current Auth User:", currentUserId);
+            // Log for debugging permissions
+            console.log("App ID:", appId);
+            console.log("Current Auth User:", currentUserId);
 
             } else {
-              currentUserId = null;
-              currentUserEmail = null;
-              currentUserNameSpan.textContent = 'N/A';
-              customerEmailInput.value = '';
-              customerNameInput.value = '';
+            currentUserId = null;
+            currentUserEmail = null;
+            currentUserNameSpan.textContent = 'N/A';
+            customerEmailInput.value = '';
+            customerNameInput.value = '';
 
-              authOverlay.classList.remove('hidden');
-              mainContainer.classList.add('hidden');
-              userIdDisplay.classList.add('hidden');
-              isAuthReady = true;
+            authOverlay.classList.remove('hidden');
+            mainContainer.classList.add('hidden');
+            userIdDisplay.classList.add('hidden');
+            isAuthReady = true;
             }
-          });
+            });
 
-        } catch (e) {
-          console.error("Firebase Init Error:", e);
-          showMessageBox("Firebase connection failed. Check console for details.");
-        }
-      }
+            } catch (e) {
+            console.error("Firebase Init Error:", e);
+            showMessageBox("Firebase connection failed. Check console for details.");
+            }
+            }
 
-      toggleAuthMode.addEventListener('click', toggleAuthModeHandler);
-      authSubmitButton.addEventListener('click', authSubmitHandler);
-      logoutButton.addEventListener('click', () => signOut(auth));
+            toggleAuthMode.addEventListener('click', toggleAuthModeHandler);
+            authSubmitButton.addEventListener('click', authSubmitHandler);
+            logoutButton.addEventListener('click', () => signOut(auth));
 
-      floatingOrderHistoryBtn.addEventListener('click', () => orderHistoryModal.classList.remove('hidden'));
-      orderHistoryModalCloseBtn.addEventListener('click', () => orderHistoryModal.classList.add('hidden'));
+            floatingOrderHistoryBtn.addEventListener('click', () => orderHistoryModal.classList.remove('hidden'));
+            orderHistoryModalCloseBtn.addEventListener('click', () => orderHistoryModal.classList.add('hidden'));
 
 
-      initFirebase();
-      fetchProductCatalog();
+            initFirebase();
+            fetchProductCatalog();
 
-      messageBox.addEventListener('click', (e) => {
-        if (e.target === messageBox) {
-          hideMessageBox();
-        }
-      });
+            messageBox.addEventListener('click', (e) => {
+            if (e.target === messageBox) {
+            hideMessageBox();
+            }
+            });
 
-  </script>
-</body>
+            </script>
+            </body>
 
-</html>
+            </html>
