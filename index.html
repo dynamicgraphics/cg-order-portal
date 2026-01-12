@@ -1083,6 +1083,9 @@
         customer_name: orderData.customerName,
         customer_email: orderData.customerEmail,
         message_html: adminEmailBody.replace(/\n/g, '<br>'),
+        message: adminEmailBody, // Fallback for templates using {{message}}
+        content: adminEmailBody, // Fallback for templates using {{content}}
+        notes: orderData.notes,
         to_email: 'admin@example.com'
       };
 
@@ -1091,6 +1094,8 @@
         customer_name: orderData.customerName,
         customer_email: orderData.customerEmail,
         message_html: customerEmailBody.replace(/\n/g, '<br>'),
+        message: customerEmailBody, // Fallback
+        content: customerEmailBody, // Fallback
         to_email: orderData.customerEmail
       };
 
