@@ -995,7 +995,7 @@
         // I'll leave a small message box for upload success as it's an async process and confirmation is good, but user might want it gone.
         // Re-reading: "no confirmation pop up ... once they select an item to the order."
         // I will show it for uploads because it's a batch process and they need to know when it *finished*.
-        showMessageBox(`${files.length} custom design(s) added to order!`);
+        // showMessageBox(`${files.length} custom design(s) added to order!`);
       } catch (error) {
         console.error("Error during custom file upload:", error);
         customUploadList.innerHTML += `<div class="p-2 text-sm text-red-600 bg-red-100 rounded-lg mt-2">Upload Failed: ${error.message}</div>`;
@@ -1286,8 +1286,8 @@
           }
 
           currentUserNameDisplay = displayName;
-          // Format: "Logged in as: John (john@example.com)" or just "John"
-          const displayString = currentUserEmail ? `${displayName} (${currentUserEmail})` : displayName;
+          // Format: Just "John" or "john@example.com" - Clean, no ID, no parenthesis.
+          const displayString = currentUserEmail ? (displayName === currentUserEmail.split('@')[0] ? currentUserEmail : displayName) : displayName;
           currentUserNameSpan.textContent = displayString;
 
           // Pre-fill form if needed
@@ -1418,8 +1418,8 @@
 
               // Version Indicator
               const versionDisplay = document.createElement('div');
-              versionDisplay.className = 'fixed bottom-2 right-2 text-xs text-gray-400 font-mono pointer-events-none z-50';
-              versionDisplay.textContent = 'App Version: v1.1';
+              versionDisplay.className = 'fixed top-4 right-4 text-xs text-white bg-blue-600 px-2 py-1 rounded shadow-lg font-mono pointer-events-none z-[9999]';
+              versionDisplay.textContent = 'v1.2';
               document.body.appendChild(versionDisplay);
 
               // Log for debugging permissions
