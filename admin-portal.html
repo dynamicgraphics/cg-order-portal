@@ -1,219 +1,492 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>CG Order Admin Portal</title>
-    <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>📊</text></svg>">
+    <title>CG Admin Command Center</title>
+    <!-- Favicon -->
+    <link rel="icon"
+        href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>⚡️</text></svg>">
+
+    <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
+
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+
+    <!-- Chart.js for Analytics -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+    <!-- DataTables for Sortable Grids -->
+    <link rel="stylesheet" href="https://cdn.datatables.net/1.13.4/css/jquery.dataTables.min.css">
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script src="https://cdn.datatables.net/1.13.4/js/jquery.dataTables.min.js"></script>
+
     <style>
         body {
             font-family: 'Inter', sans-serif;
-            @apply bg-gray-100 flex flex-col items-center min-h-screen p-4;
+            background-color: #f3f4f6;
         }
-        .container {
-            @apply bg-white shadow-lg rounded-xl p-6 md:p-8 w-full max-w-6xl space-y-6;
+
+        .dashboard-card {
+            @apply bg-white p-6 rounded-xl shadow-sm border border-gray-100;
         }
-        .login-container {
-            @apply bg-white shadow-lg rounded-xl p-8 max-w-md w-full text-center space-y-6;
+
+        .stat-value {
+            @apply text-3xl font-bold text-gray-800 mt-2;
         }
-        .order-card {
-            @apply bg-gray-50 border border-gray-200 rounded-lg p-4 shadow-sm;
+
+        .stat-label {
+            @apply text-sm text-gray-500 font-medium uppercase tracking-wide;
         }
-        .order-item {
-            @apply flex items-center mb-2;
-        }
-        .order-list-scroll {
-            max-height: 70vh; /* Adjust as needed */
-            overflow-y: auto;
-            scrollbar-width: thin; /* Firefox */
-            scrollbar-color: #cbd5e0 #edf2f7; /* thumb and track track color */
-        }
-        .order-list-scroll::-webkit-scrollbar {
+
+        /* Custom Scrollbar for modern look */
+        ::-webkit-scrollbar {
             width: 8px;
         }
-        .order-list-scroll::-webkit-scrollbar-track {
-            background: #edf2f7; /* Light gray track */
-            border-radius: 10px;
+
+        ::-webkit-scrollbar-track {
+            background: #f1f1f1;
         }
-        .order-list-scroll::-webkit-scrollbar-thumb {
-            background-color: #cbd5e0; /* Medium gray thumb */
-            border-radius: 10px;
-            border: 2px solid #edf2f7;
+
+        ::-webkit-scrollbar-thumb {
+            background: #c5c5c5;
+            border-radius: 4px;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: #a8a8a8;
+        }
+
+        /* DataTables Customization */
+        .dataTables_wrapper .dataTables_length select {
+            @apply border border-gray-300 rounded px-2 py-1 outline-none;
+        }
+
+        .dataTables_wrapper .dataTables_filter input {
+            @apply border border-gray-300 rounded px-3 py-1 outline-none ml-2;
         }
     </style>
 </head>
-<body>
-    <div id="app" class="w-full flex flex-col items-center">
-        <!-- Login Section -->
-        <div id="loginSection" class="login-container mt-20">
-            <h1 class="text-3xl font-bold text-gray-800 mb-6">Admin Login</h1>
-            <input type="email" id="adminEmail" placeholder="Email"
-                   class="w-full p-3 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 shadow-sm">
-            <input type="password" id="adminPassword" placeholder="Password"
-                   class="w-full p-3 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 shadow-sm">
-            <button id="loginButton"
-                    class="w-full px-6 py-3 bg-blue-600 text-white rounded-lg font-semibold hover:bg-blue-700 transition duration-200 shadow-md">
-                Log In
-            </button>
-            <p id="loginError" class="text-red-600 text-sm hidden"></p>
+
+<body class="text-gray-800">
+
+    <div id="app" class="flex flex-col min-h-screen">
+
+        <!-- Login Overlay -->
+        <div id="loginOverlay"
+            class="fixed inset-0 bg-gray-900 bg-opacity-90 flex items-center justify-center z-50 transition-opacity duration-300">
+            <div
+                class="bg-white p-8 rounded-2xl shadow-2xl max-w-sm w-full transform scale-100 transition-transform duration-300">
+                <div class="text-center mb-8">
+                    <div class="text-4xl mb-2">🔐</div>
+                    <h2 class="text-2xl font-bold text-gray-800">Admin Access</h2>
+                    <p class="text-gray-500 text-sm">Secure Portal Login</p>
+                </div>
+                <div class="space-y-4">
+                    <div>
+                        <label class="block text-xs font-bold text-gray-700 uppercase mb-1">Email</label>
+                        <input type="email" id="adminEmail"
+                            class="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition"
+                            placeholder="admin@example.com">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-gray-700 uppercase mb-1">Password</label>
+                        <input type="password" id="adminPassword"
+                            class="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition"
+                            placeholder="••••••••">
+                    </div>
+                    <button id="loginBtn"
+                        class="w-full bg-gray-900 text-white font-bold py-3 rounded-lg hover:bg-black transition duration-200 shadow-lg transform active:scale-95">
+                        Log In
+                    </button>
+                    <p id="loginError" class="text-red-500 text-sm text-center hidden mt-2"></p>
+                </div>
+            </div>
         </div>
 
-        <!-- Main Admin Dashboard Section -->
-        <div id="dashboardSection" class="container hidden">
-            <div class="flex justify-between items-center mb-6">
-                <h1 class="text-3xl font-bold text-gray-800">Order Dashboard</h1>
-                <div class="flex items-center space-x-4">
-                    <p class="text-gray-700">Logged in as: <span id="loggedInEmail" class="font-semibold"></span></p>
-                    <button id="logoutButton" class="px-4 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 transition duration-200">Log Out</button>
+        <!-- Main Dashboard -->
+        <div id="mainDashboard"
+            class="flex-grow hidden opacity-0 transition-opacity duration-500 p-6 max-w-7xl mx-auto w-full">
+
+            <!-- Header -->
+            <div class="flex flex-col md:flex-row justify-between items-center mb-8">
+                <div>
+                    <h1 class="text-3xl font-bold text-gray-900">Analytics Dashboard</h1>
+                    <p class="text-gray-500 mt-1">Real-time overview of portal performance</p>
+                </div>
+                <div class="flex items-center space-x-4 mt-4 md:mt-0">
+                    <span id="adminUserDisplay"
+                        class="text-sm font-medium text-gray-600 bg-white px-3 py-1 rounded-full border border-gray-200"></span>
+                    <button id="logoutBtn"
+                        class="bg-red-50 text-red-600 px-4 py-2 rounded-lg text-sm font-medium hover:bg-red-100 transition">Log
+                        Out</button>
+                    <button id="refreshDataBtn"
+                        class="bg-blue-50 text-blue-600 px-4 py-2 rounded-lg text-sm font-medium hover:bg-blue-100 transition">🔄
+                        Refresh</button>
                 </div>
             </div>
 
-            <!-- Order List Display -->
-            <div id="ordersList" class="order-list-scroll space-y-4">
-                <p id="loadingOrders" class="text-center text-gray-600">Loading orders...</p>
-                <!-- Orders will be dynamically loaded here -->
+            <!-- Stats Row -->
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+                <div class="dashboard-card">
+                    <div class="text-blue-500 mb-1">📦</div>
+                    <p class="stat-label">Total Orders</p>
+                    <p class="stat-value" id="totalOrdersCount">0</p>
+                </div>
+                <div class="dashboard-card">
+                    <div class="text-green-500 mb-1">📈</div>
+                    <p class="stat-label">Total Items Sold</p>
+                    <p class="stat-value" id="totalItemsSold">0</p>
+                </div>
+                <div class="dashboard-card">
+                    <div class="text-purple-500 mb-1">✨</div>
+                    <p class="stat-label">Glow Items</p>
+                    <p class="stat-value" id="totalGlowItems">0</p>
+                </div>
+                <div class="dashboard-card">
+                    <div class="text-orange-500 mb-1">👥</div>
+                    <p class="stat-label">Unique Customers</p>
+                    <p class="stat-value" id="uniqueCustomers">0</p>
+                </div>
             </div>
-            <p id="noOrders" class="text-center text-gray-500 hidden mt-4">No orders found yet.</p>
+
+            <!-- Charts Row -->
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
+                <!-- Popular Movers Chart -->
+                <div class="dashboard-card lg:col-span-2">
+                    <h3 class="font-bold text-gray-800 mb-4">🏆 Top Moving Products</h3>
+                    <div class="relative h-64 w-full">
+                        <canvas id="popularProductsChart"></canvas>
+                    </div>
+                </div>
+
+                <!-- Recent Activity Feed -->
+                <div class="dashboard-card">
+                    <h3 class="font-bold text-gray-800 mb-4">⚡️ Recent Activity</h3>
+                    <div id="recentActivityList" class="space-y-3 max-h-64 overflow-y-auto pr-2">
+                        <!-- Activity items injected here -->
+                        <div class="text-gray-400 text-sm text-center italic">Loading activity...</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Orders Table Section -->
+            <div class="dashboard-card overflow-hidden">
+                <div class="flex justify-between items-center mb-4">
+                    <h3 class="font-bold text-gray-800 text-lg">Detailed Order Records</h3>
+                    <button id="exportCsvBtn"
+                        class="text-sm text-green-600 hover:text-green-700 font-medium flex items-center">
+                        <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z">
+                            </path>
+                        </svg>
+                        Export CSV
+                    </button>
+                </div>
+
+                <div class="overflow-x-auto">
+                    <table id="ordersTable" class="w-full text-left border-collapse">
+                        <thead>
+                            <tr class="text-xs text-gray-500 border-b border-gray-200">
+                                <th class="py-3 font-semibold uppercase tracking-wider">Order ID</th>
+                                <th class="py-3 font-semibold uppercase tracking-wider">Date</th>
+                                <th class="py-3 font-semibold uppercase tracking-wider">Customer</th>
+                                <th class="py-3 font-semibold uppercase tracking-wider">Items Summary</th>
+                                <th class="py-3 font-semibold uppercase tracking-wider text-right">Total Qty</th>
+                                <th class="py-3 font-semibold uppercase tracking-wider text-center">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="ordersTableBody" class="text-sm text-gray-700">
+                            <!-- Rows injected by JS via DataTables -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
         </div>
     </div>
 
-    <!-- Firebase SDKs -->
-    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-auth-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore-compat.js"></script>
+    <!-- Firebase SDKs (Modular v10.12.2 to match index.html compatibility logic) -->
+    <!-- Note: Using Compat build here for easier implementation with existing snippets if preferred, 
+         BUT to match index.html strictly we should use Modular. 
+         However, for a quick Admin dashboard, the Compat CDN is often simpler for single-file. 
+         I will use the Compat version as user provided in their snippet, but bumped to 10.12.2 for stability. -->
+    <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
 
     <script>
-        // --- Firebase Configuration ---
-        // IMPORTANT: REPLACE THIS WITH YOUR ACTUAL FIREBASE CONFIGURATION
-        // You obtained this when you added a web app to your Firebase project in the console.
+        // --- CONFIGURATION ---
+        // Must match index.html
         const firebaseConfig = {
-          apiKey: "AIzaSyBdp15BtxFu-VPkuOdkiX1WyXgAMLrj124",
-          authDomain: "cg-portal-backend.firebaseapp.com",
-          projectId: "cg-portal-backend",
-          storageBucket: "cg-portal-backend.firebasestorage.app",
-          messagingSenderId: "543604960285",
-          appId: "1:543604960285:web:03b481d610a5eb2fdcaaf4",
-          measurementId: "G-TFK67F6RPG"
+            apiKey: "AIzaSyBdp15BtxFu-VPkuOdkiX1WyXgAMLrj124",
+            authDomain: "cg-portal-backend.firebaseapp.com",
+            projectId: "cg-portal-backend",
+            storageBucket: "cg-portal-backend.firebasestorage.app",
+            messagingSenderId: "543604960285",
+            appId: "1:543604960285:web:03b481d610a5eb2fdcaaf4",
+            measurementId: "G-TFK67F6RPG"
         };
+
+        // App ID for data path (must match index.html logic)
+        const APP_ID = "default-app-id";
 
         // Initialize Firebase
         firebase.initializeApp(firebaseConfig);
         const auth = firebase.auth();
         const db = firebase.firestore();
 
-        // --- DOM Elements ---
-        const loginSection = document.getElementById('loginSection');
+        // DOM Elements
+        const loginOverlay = document.getElementById('loginOverlay');
+        const mainDashboard = document.getElementById('mainDashboard');
         const adminEmailInput = document.getElementById('adminEmail');
         const adminPasswordInput = document.getElementById('adminPassword');
-        const loginButton = document.getElementById('loginButton');
+        const loginBtn = document.getElementById('loginBtn');
         const loginError = document.getElementById('loginError');
+        const logoutBtn = document.getElementById('logoutBtn');
+        const refreshDataBtn = document.getElementById('refreshDataBtn');
+        const adminUserDisplay = document.getElementById('adminUserDisplay');
+        const totalOrdersCountEl = document.getElementById('totalOrdersCount');
+        const totalItemsSoldEl = document.getElementById('totalItemsSold');
+        const totalGlowItemsEl = document.getElementById('totalGlowItems');
+        const uniqueCustomersEl = document.getElementById('uniqueCustomers');
+        const recentActivityList = document.getElementById('recentActivityList');
 
-        const dashboardSection = document.getElementById('dashboardSection');
-        const loggedInEmailSpan = document.getElementById('loggedInEmail');
-        const logoutButton = document.getElementById('logoutButton');
-        const ordersListDiv = document.getElementById('ordersList');
-        const loadingOrders = document.getElementById('loadingOrders');
-        const noOrders = document.getElementById('noOrders');
+        let ordersData = [];
+        let dataTableInstance = null;
+        let chartInstance = null;
 
-        // --- Authentication Logic ---
+        // --- AUTH ---
 
-        // Check auth state on page load
         auth.onAuthStateChanged(user => {
             if (user) {
-                // User is signed in
-                loggedInEmailSpan.textContent = user.email;
-                loginSection.classList.add('hidden');
-                dashboardSection.classList.remove('hidden');
-                fetchOrders(); // Fetch orders once logged in
+                adminUserDisplay.textContent = user.email;
+                loginOverlay.classList.add('hidden'); // Hide login
+                mainDashboard.classList.remove('hidden'); // Show dashboard
+                setTimeout(() => mainDashboard.classList.remove('opacity-0'), 100);
+                loadData();
             } else {
-                // User is signed out
-                loginSection.classList.remove('hidden');
-                dashboardSection.classList.add('hidden');
-                ordersListDiv.innerHTML = ''; // Clear orders if logged out
-                loadingOrders.classList.add('hidden');
-                noOrders.classList.remove('hidden'); // Show no orders message
-                loggedInEmailSpan.textContent = '';
+                loginOverlay.classList.remove('hidden');
+                mainDashboard.classList.add('hidden');
+                mainDashboard.classList.add('opacity-0');
             }
         });
 
-        loginButton.addEventListener('click', async () => {
-            const email = adminEmailInput.value;
-            const password = adminPasswordInput.value;
-            loginError.classList.add('hidden'); // Hide previous errors
-
+        loginBtn.addEventListener('click', async () => {
+            loginBtn.disabled = true;
+            loginBtn.textContent = "Verifying...";
             try {
-                await auth.signInWithEmailAndPassword(email, password);
-                // onAuthStateChanged will handle UI update
-            } catch (error) {
-                console.error("Login failed:", error.message);
-                loginError.textContent = `Login failed: ${error.message}`;
+                await auth.signInWithEmailAndPassword(adminEmailInput.value, adminPasswordInput.value);
+            } catch (e) {
+                loginError.textContent = "Access Denied: " + e.message;
                 loginError.classList.remove('hidden');
+                loginBtn.disabled = false;
+                loginBtn.textContent = "Log In";
             }
         });
 
-        logoutButton.addEventListener('click', async () => {
-            try {
-                await auth.signOut();
-                // onAuthStateChanged will handle UI update
-            } catch (error) {
-                console.error("Logout failed:", error.message);
-            }
-        });
+        logoutBtn.addEventListener('click', () => auth.signOut());
 
-        // --- Order Fetching and Display Logic ---
-        async function fetchOrders() {
-            ordersListDiv.innerHTML = ''; // Clear previous content
-            loadingOrders.classList.remove('hidden');
-            noOrders.classList.add('hidden');
+        // --- DATA LOADING ---
+
+        refreshDataBtn.addEventListener('click', loadData);
+
+        async function loadData() {
+            refreshDataBtn.classList.add('animate-spin');
 
             try {
-                const ordersSnapshot = await db.collection('orders')
-                                                .orderBy('timestamp', 'desc') // Order by latest orders first
-                                                .limit(50) // Limit to last 50 orders for performance
-                                                .get();
+                // Fetch Orders from the path used in index.html
+                // Path: /artifacts/default-app-id/public/data/orders
+                const snapshot = await db.collection(`artifacts/${APP_ID}/public/data/orders`)
+                    .orderBy('timestamp', 'desc')
+                    .limit(200) // Start with 200 recent
+                    .get();
 
-                if (ordersSnapshot.empty) {
-                    noOrders.classList.remove('hidden');
-                    return;
-                }
-
-                ordersSnapshot.forEach(doc => {
-                    const order = doc.data();
-                    const orderId = doc.id;
-                    const orderDate = order.timestamp ? new Date(order.timestamp.seconds * 1000).toLocaleString() : 'N/A';
-
-                    let itemsHtml = order.order_details.map(item => `
-                        <div class="order-item">
-                            <img src="${item.imageUrl || 'https://placehold.co/40x40/CCCCCC/000000?text=No+Image'}" alt="${item.title}" class="w-10 h-10 object-contain rounded mr-2">
-                            <p class="text-sm text-gray-700">${item.title} (SKU: ${item.sku}) - Qty: ${item.quantity}</p>
-                        </div>
-                    `).join('');
-
-                    const orderCardHtml = `
-                        <div class="order-card">
-                            <h3 class="font-bold text-lg text-gray-800 mb-2">Order ID: ${orderId}</h3>
-                            <p class="text-sm text-gray-600 mb-1"><strong>Date:</strong> ${orderDate}</p>
-                            <p class="text-sm text-gray-600 mb-1"><strong>Customer:</strong> ${order.customer_name} (${order.customer_email})</p>
-                            <p class="text-sm text-gray-600 mb-2"><strong>Notes:</strong> ${order.customer_notes || 'N/A'}</p>
-                            <h4 class="font-semibold text-gray-700 mt-3 mb-2">Items:</h4>
-                            <div class="space-y-1">
-                                ${itemsHtml}
-                            </div>
-                            <h4 class="font-semibold text-gray-700 mt-3 mb-1">Totals:</h4>
-                            <p class="text-sm text-gray-600"><strong>Total Qty (Excl. GITD):</strong> <span class="font-bold text-base">${order.total_quantity_excluding_glow}</span></p>
-                            <p class="text-sm text-gray-600"><strong>GITD Qty:</strong> <span class="font-bold text-base">${order.total_glow_sticker_quantity}</span></p>
-                        </div>
-                    `;
-                    ordersListDiv.insertAdjacentHTML('beforeend', orderCardHtml);
+                ordersData = [];
+                snapshot.forEach(doc => {
+                    ordersData.push({ id: doc.id, ...doc.data() });
                 });
+
+                updateStats();
+                updateChart();
+                updateRecentActivity();
+                renderTable();
+
             } catch (error) {
-                console.error("Error fetching orders:", error);
-                ordersListDiv.innerHTML = `<p class="text-red-600 text-center">Error loading orders: ${error.message}</p>`;
+                console.error("Data Load Error:", error);
+                alert("Error loading data: " + error.message + "\n\nCheck console.");
             } finally {
-                loadingOrders.classList.add('hidden');
+                refreshDataBtn.classList.remove('animate-spin');
             }
         }
+
+        function updateStats() {
+            const totalOrders = ordersData.length;
+            let totalItems = 0;
+            let totalGlow = 0;
+            const customers = new Set();
+
+            ordersData.forEach(order => {
+                totalItems += (order.totalNonGlow || 0) + (order.totalGlow || 0) + (order.totalEnvelope || 0);
+                totalGlow += (order.totalGlow || 0);
+                if (order.customerEmail) customers.add(order.customerEmail);
+            });
+
+            totalOrdersCountEl.textContent = totalOrders.toLocaleString();
+            totalItemsSoldEl.textContent = totalItems.toLocaleString();
+            totalGlowItemsEl.textContent = totalGlow.toLocaleString();
+            uniqueCustomersEl.textContent = customers.size.toLocaleString();
+        }
+
+        function updateRecentActivity() {
+            const recent = ordersData.slice(0, 10); // Last 10
+            recentActivityList.innerHTML = recent.map(order => {
+                const date = order.timestamp ? new Date(order.timestamp.seconds * 1000).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '';
+                return `
+                    <div class="flex items-center justify-between p-2 hover:bg-gray-50 rounded transition">
+                        <div>
+                            <p class="text-sm font-semibold text-gray-800">${order.customerName || 'Unknown'}</p>
+                            <p class="text-xs text-gray-500">${order.orderId} • ${order.orderItems?.length || 0} items</p>
+                        </div>
+                        <span class="text-xs font-mono text-gray-400">${date}</span>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        function updateChart() {
+            // Aggregate Product Counts
+            const productCounts = {};
+
+            ordersData.forEach(order => {
+                if (order.orderItems) {
+                    order.orderItems.forEach(item => {
+                        const name = item.title;
+                        productCounts[name] = (productCounts[name] || 0) + (item.quantity || 0);
+                    });
+                }
+            });
+
+            // Sort top 10
+            const sortedProducts = Object.entries(productCounts)
+                .sort(([, a], [, b]) => b - a)
+                .slice(0, 10);
+
+            const labels = sortedProducts.map(([name]) => name.substring(0, 20) + (name.length > 20 ? '...' : ''));
+            const data = sortedProducts.map(([, count]) => count);
+
+            const ctx = document.getElementById('popularProductsChart').getContext('2d');
+
+            if (chartInstance) chartInstance.destroy();
+
+            chartInstance = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        label: 'Units Sold',
+                        data: data,
+                        backgroundColor: 'rgba(59, 130, 246, 0.6)',
+                        borderColor: 'rgba(59, 130, 246, 1)',
+                        borderWidth: 1,
+                        borderRadius: 4
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { display: false }
+                    },
+                    scales: {
+                        y: { beginAtZero: true, grid: { borderDash: [2, 2] } },
+                        x: { grid: { display: false } }
+                    }
+                }
+            });
+        }
+
+        function renderTable() {
+            // Destroy existing DataTable if exists
+            if (dataTableInstance) {
+                dataTableInstance.destroy();
+            }
+
+            const tableBody = document.getElementById('ordersTableBody');
+            tableBody.innerHTML = ordersData.map(order => {
+                const date = order.timestamp ? new Date(order.timestamp.seconds * 1000).toLocaleDateString() : 'N/A';
+                const totalQty = (order.totalNonGlow || 0) + (order.totalGlow || 0);
+
+                // Summarize items string
+                const itemsSummary = (order.orderItems || []).map(i => `${i.quantity}x ${i.sku}`).join(', ');
+
+                return `
+                    <tr class="hover:bg-gray-50 border-b border-gray-100 last:border-0 transition">
+                        <td class="py-3 font-mono text-xs text-blue-600 font-semibold">${order.orderId}</td>
+                        <td class="py-3 text-xs text-gray-500">${date}</td>
+                        <td class="py-3">
+                            <div class="font-medium text-gray-900">${order.customerName}</div>
+                            <div class="text-xs text-gray-500">${order.customerEmail}</div>
+                        </td>
+                        <td class="py-3 text-xs text-gray-600 truncate max-w-xs" title="${itemsSummary}">${itemsSummary}</td>
+                        <td class="py-3 text-right font-bold text-gray-700">${totalQty}</td>
+                        <td class="py-3 text-center">
+                            <button onclick='showDetails("${order.id}")' class="text-xs bg-gray-100 hover:bg-gray-200 text-gray-700 px-2 py-1 rounded">View</button>
+                        </td>
+                    </tr>
+                `;
+            }).join('');
+
+            // Initialize DataTable
+            dataTableInstance = $('#ordersTable').DataTable({
+                pageLength: 10,
+                order: [[1, 'desc']], // Sort by Date by default
+                dom: '<"flex justify-between items-center mb-4"lf>rtip', // Layout
+                language: {
+                    search: "Search Orders:",
+                    searchPlaceholder: "Customer, ID, SKU..."
+                }
+            });
+        }
+
+        // Export to CSV
+        document.getElementById('exportCsvBtn').addEventListener('click', () => {
+            let csvContent = "data:text/csv;charset=utf-8,";
+            csvContent += "Order ID,Date,Customer Name,Customer Email,Items,Total Qty,Notes\n";
+
+            ordersData.forEach(row => {
+                const date = row.timestamp ? new Date(row.timestamp.seconds * 1000).toLocaleDateString() : '';
+                const items = (row.orderItems || []).map(i => `${i.quantity}x ${i.sku}`).join('; ');
+                const total = (row.totalNonGlow || 0) + (row.totalGlow || 0);
+
+                // Escape quotes
+                const clean = (text) => `"${(text || '').toString().replace(/"/g, '""')}"`;
+
+                csvContent += `${clean(row.orderId)},${clean(date)},${clean(row.customerName)},${clean(row.customerEmail)},${clean(items)},${clean(total)},${clean(row.notes)}\n`;
+            });
+
+            const encodedUri = encodeURI(csvContent);
+            const link = document.createElement("a");
+            link.setAttribute("href", encodedUri);
+            link.setAttribute("download", "orders_export.csv");
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        });
+
+        // Simple details alert for now
+        window.showDetails = (id) => {
+            const order = ordersData.find(o => o.id === id);
+            if (order) {
+                const itemsList = order.orderItems.map(i => `• ${i.quantity}x ${i.title} (${i.sku})`).join('\n');
+                alert(`Order: ${order.orderId}\nCustomer: ${order.customerName}\nNotes: ${order.notes || 'None'}\n\nItems:\n${itemsList}`);
+            }
+        };
+
     </script>
 </body>
+
 </html>
