@@ -859,6 +859,7 @@
           sku: product.sku,
           title: product.title,
           quantity: quantity,
+          imageUrl: product.imageUrl || product.image || '', // Store image for proof/email
           isCustom: false,
           isGlow: product.title.toLowerCase().includes('glow in the dark')
         };
@@ -1061,54 +1062,71 @@
     }
 
     async function sendEmailNotifications(orderData) {
-      const adminEmailBody = `
-        New Order Received: ${orderData.orderId}
-        Customer: ${orderData.customerName} (${orderData.customerEmail})
-        User ID: ${orderData.userId}
-        ---
-        Total Non-Glow Quantity: ${orderData.totalNonGlow.toLocaleString()}
-        Total Glow Quantity: ${orderData.totalGlow.toLocaleString()}
-        Total Envelopes (in 1000s): ${orderData.totalEnvelope.toLocaleString()}
-        ---
-        Notes: ${orderData.notes || 'None'}
-        ---
-        Items:
-        ${orderData.orderItems.map(item => `- ${item.quantity.toLocaleString()} x ${item.title} (${item.sku})
-        ${item.isCustom ? `[CUSTOM UPLOAD: ${item.fileUrl}]` : ''}`).join('\n')}
-        `;
+      // Look up images for existing items if they are missing (backward compatibility)
+      const enrichedItems = orderData.orderItems.map(item => {
+        let img = item.imageUrl;
+        if (!img && !item.isCustom) {
+          const product = productCatalog.find(p => p.sku === item.sku);
+          img = product ? (product.imageUrl || product.image) : '';
+        }
+        return {
+          title: item.title,
+          sku: item.sku,
+          quantity: item.quantity,
+          quantity_display: item.quantity.toLocaleString(),
+          imageUrl: img || 'https://placehold.co/40x40/CCCCCC/000000?text=No+Image',
+          isCustom: item.isCustom
+        };
+      });
 
-      const customerEmailBody = `
-        Thank you for your order!
-        Order ID: ${orderData.orderId}
-        ---
-        Items:
-        ${orderData.orderItems.map(item => `- ${item.quantity.toLocaleString()} x ${item.title}
-        (${item.sku})`).join('\n')}
-        `;
+      // Generate HTML Table for Admin Template (which expects {{{order_details_table_html}}})
+      let tableHtml = '<table><thead><tr><th>Image</th><th>Item</th><th>Qty</th></tr></thead><tbody>';
+      enrichedItems.forEach(item => {
+        tableHtml += `<tr>
+          <td class="image-cell"><img src="${item.imageUrl}" alt="${item.title}"></td>
+          <td>${item.title} <br><small style="color:#777;">${item.sku}</small></td>
+          <td class="quantity-cell">${item.quantity_display}</td>
+        </tr>`;
+      });
+      tableHtml += '</tbody></table>';
 
-      const adminParams = {
+      const orderDate = new Date(orderData.timestamp ? orderData.timestamp.seconds * 1000 : Date.now()).toLocaleString();
+
+      // Construct the robust parameters matching the Handlebars template
+      const emailParams = {
         order_id: orderData.orderId,
+        date: orderDate, // Added for Admin template
         customer_name: orderData.customerName,
         customer_email: orderData.customerEmail,
-        message_html: adminEmailBody.replace(/\n/g, '<br>'),
-        message: adminEmailBody, // Fallback for templates using {{message}}
-        content: adminEmailBody, // Fallback for templates using {{content}}
-        notes: orderData.notes,
-        to_email: 'admin@example.com'
-      };
 
-      const customerParams = {
-        order_id: orderData.orderId,
-        customer_name: orderData.customerName,
-        customer_email: orderData.customerEmail,
-        message_html: customerEmailBody.replace(/\n/g, '<br>'),
-        message: customerEmailBody, // Fallback
-        content: customerEmailBody, // Fallback
+        // Totals
+        total_nonglow: orderData.totalNonGlow.toLocaleString(),
+        total_glow: orderData.totalGlow.toLocaleString(),
+        total_envelope: orderData.totalEnvelope.toLocaleString(),
+
+        // The Array for Customer Template {{#order_items}}
+        order_items: enrichedItems,
+
+        // The HTML String for Admin Template {{{order_details_table_html}}}
+        order_details_table_html: tableHtml,
+
+        // Notes
+        raw_notes: orderData.notes || '',
+        notes: orderData.notes || '',
+
+        // Fallbacks
+        message: "Order placed successfully.",
         to_email: orderData.customerEmail
       };
 
+      // Admin params
+      const adminParams = {
+        ...emailParams,
+        to_email: 'admin@example.com'
+      };
+
       await emailjs.send(EMAILJS_SERVICE_ID, EMAILJS_TEMPLATE_ID_ADMIN, adminParams, EMAILJS_USER_ID);
-      await emailjs.send(EMAILJS_SERVICE_ID, EMAILJS_TEMPLATE_ID_CUSTOMER, customerParams, EMAILJS_USER_ID);
+      await emailjs.send(EMAILJS_SERVICE_ID, EMAILJS_TEMPLATE_ID_CUSTOMER, emailParams, EMAILJS_USER_ID);
     }
 
     // --- LISTENERS ---
