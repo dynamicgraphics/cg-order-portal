@@ -1040,7 +1040,9 @@
         console.log("Order successfully written to Firestore:", docId);
 
         await sendEmailNotifications(orderData);
+        proofModal.classList.add('hidden'); 
 
+        
         currentOrder = [];
         saveCartLocally(); // Clear local storage too on success
         renderOrderList();
