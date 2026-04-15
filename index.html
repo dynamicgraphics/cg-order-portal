@@ -1095,6 +1095,20 @@
           </li>`;
       });
 
+            // Build table HTML for the customer email template
+      const tableHtml = enrichedItems.map(item => `
+        <tr style="border-bottom: 1px solid #eee;">
+          <td style="padding: 8px;">
+            <img src="${item.imageUrl}" alt="${item.title}" style="width: 40px; height: 40px; object-fit: contain;">
+          </td>
+          <td style="padding: 8px;">
+            <strong>${item.title}</strong><br>
+            <small style="color: #777;">${item.sku}</small>
+          </td>
+          <td style="padding: 8px; text-align: right;">${item.quantity_display}</td>
+        </tr>
+      `).join('');
+
       // Construct the robust parameters matching the Handlebars template
       const emailParams = {
         order_id: orderData.orderId,
@@ -1114,6 +1128,7 @@
         message: "Order placed successfully.",
         to_email: orderData.customerEmail
       };
+
 
       // Build the full admin HTML
       const adminHtml = `
