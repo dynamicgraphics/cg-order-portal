@@ -1098,22 +1098,20 @@ enrichedItems.forEach(item => {
 
 
       // Construct the robust parameters matching the Handlebars template
-      const emailParams = {
-        order_id: orderData.orderId,
-        date: orderDate, // Added for Admin template
-        customer_name: orderData.customerName,
-        customer_email: orderData.customerEmail,
+    const emailParams = {
+  order_id: orderData.orderId,
+  customer_name: orderData.customerName,
+  customer_email: orderData.customerEmail,
+  total_nonglow: orderData.totalNonGlow.toLocaleString(),
+  total_glow: orderData.totalGlow.toLocaleString(),
+  total_envelope: orderData.totalEnvelope.toLocaleString(),
+  order_items_html: orderItemsHtml,
+  notes_html: orderData.notes
+    ? `<p style="font-size: 0.9em; color: #555; margin-top: 20px;"><strong>Notes:</strong> ${orderData.notes}</p>`
+    : '',
+  to_email: orderData.customerEmail
+};
 
-        // Totals
-        total_nonglow: orderData.totalNonGlow.toLocaleString(),
-        total_glow: orderData.totalGlow.toLocaleString(),
-        total_envelope: orderData.totalEnvelope.toLocaleString(),
-
-        // Added per Claude Code
-        order_items_html: orderItemsHtml,                             
-        raw_notes: orderData.notes || '',
-  
-       };
 
 
         // The HTML String for Admin Template {{{order_details_table_html}}}
