@@ -1081,7 +1081,8 @@
         };
       });
 
-      const orderDate = new Date(orderData.timestamp ? orderData.timestamp.seconds * 1000 : Date.now()).toLocaleString();
+      const orderDate = new Date().toLocaleString();
+
 
       // Build the order items HTML string manually
       let orderItemsHtml = '';
