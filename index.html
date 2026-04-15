@@ -1160,6 +1160,12 @@
         to_email: 'orders@dynamic.graphics'
       };
 
+      await emailjs.send(EMAILJS_SERVICE_ID, EMAILJS_TEMPLATE_ID_CUSTOMER, emailParams, EMAILJS_USER_ID);
+      console.log("Customer confirmation email sent.");
+
+      await emailjs.send(EMAILJS_SERVICE_ID, EMAILJS_TEMPLATE_ID_ADMIN, adminParams, EMAILJS_USER_ID);
+      console.log("Admin notification email sent.");
+    }
 
     // --- LISTENERS ---
 
