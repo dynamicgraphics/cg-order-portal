@@ -1092,6 +1092,21 @@
 
       const orderDate = new Date(orderData.timestamp ? orderData.timestamp.seconds * 1000 : Date.now()).toLocaleString();
 
+      // Build the order items HTML string manually
+let orderItemsHtml = '';
+enrichedItems.forEach(item => {
+  orderItemsHtml += `
+    <li style="margin-bottom: 8px; padding-bottom: 8px; border-bottom: 1px solid #eee; display: flex; align-items: center;">
+      <img src="${item.imageUrl}" alt="${item.title}"
+        style="max-width: 40px; max-height: 40px; object-fit: contain; border-radius: 4px; margin-right: 10px;"
+        onerror="this.onerror=null;this.src='https://placehold.co/40x40/CCCCCC/000000?text=No+Image';">
+      <span style="font-size: 0.9em; color: #333;">
+        ${item.title} (SKU: ${item.sku}) - Qty: ${item.quantity_display}
+      </span>
+    </li>`;
+});
+
+
       // Construct the robust parameters matching the Handlebars template
       const emailParams = {
         order_id: orderData.orderId,
@@ -1104,8 +1119,12 @@
         total_glow: orderData.totalGlow.toLocaleString(),
         total_envelope: orderData.totalEnvelope.toLocaleString(),
 
-        // The Array for Customer Template {{#order_items}}
-        order_items: enrichedItems,
+        // Added per Claude Code
+        order_items_html: orderItemsHtml,                             
+        raw_notes: orderData.notes || '',
+  
+       };
+
 
         // The HTML String for Admin Template {{{order_details_table_html}}}
         order_details_table_html: tableHtml,
@@ -1122,7 +1141,7 @@
       // Admin params
       const adminParams = {
         ...emailParams,
-        to_email: 'admin@example.com'
+        to_email: 'orders@dynamic.graphics'
       };
 
       await emailjs.send(EMAILJS_SERVICE_ID, EMAILJS_TEMPLATE_ID_ADMIN, adminParams, EMAILJS_USER_ID);
