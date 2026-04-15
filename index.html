@@ -1079,17 +1079,7 @@
         };
       });
 
-      // Generate HTML Table for Admin Template (which expects {{{order_details_table_html}}})
-      let tableHtml = '<table><thead><tr><th>Image</th><th>Item</th><th>Qty</th></tr></thead><tbody>';
-      enrichedItems.forEach(item => {
-        tableHtml += `<tr>
-          <td class="image-cell"><img src="${item.imageUrl}" alt="${item.title}"></td>
-          <td>${item.title} <br><small style="color:#777;">${item.sku}</small></td>
-          <td class="quantity-cell">${item.quantity_display}</td>
-        </tr>`;
-      });
-      tableHtml += '</tbody></table>';
-
+     
       const orderDate = new Date(orderData.timestamp ? orderData.timestamp.seconds * 1000 : Date.now()).toLocaleString();
 
       // Build the order items HTML string manually
@@ -1138,15 +1128,51 @@ enrichedItems.forEach(item => {
         to_email: orderData.customerEmail
       };
 
-      // Admin params
-      const adminParams = {
-        ...emailParams,
-        to_email: 'orders@dynamic.graphics'
-      };
+     // Build the full admin HTML
+const adminHtml = `
+  <div style="font-family: 'Inter', sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #eee; border-radius: 8px; background-color: #f9f9f9;">
+    <h2 style="color: #333;">New Order Received: ${orderData.orderId}</h2>
+    <p style="color: #555;"><strong>Customer:</strong> ${orderData.customerName} (${orderData.customerEmail})</p>
+    <p style="color: #555;"><strong>Date:</strong> ${new Date().toLocaleString()}</p>
 
-      await emailjs.send(EMAILJS_SERVICE_ID, EMAILJS_TEMPLATE_ID_ADMIN, adminParams, EMAILJS_USER_ID);
-      await emailjs.send(EMAILJS_SERVICE_ID, EMAILJS_TEMPLATE_ID_CUSTOMER, emailParams, EMAILJS_USER_ID);
-    }
+    <h3 style="color: #333; margin-top: 20px;">Order Items:</h3>
+    <table style="width: 100%; border-collapse: collapse; font-size: 0.9em;">
+      <thead>
+        <tr style="background-color: #e2e8f0;">
+          <th style="padding: 8px; text-align: left; border-bottom: 2px solid #cbd5e0;">Image</th>
+          <th style="padding: 8px; text-align: left; border-bottom: 2px solid #cbd5e0;">Item</th>
+          <th style="padding: 8px; text-align: right; border-bottom: 2px solid #cbd5e0;">Qty</th>
+        </tr>
+      </thead>
+      <tbody>
+        ${enrichedItems.map(item => `
+          <tr style="border-bottom: 1px solid #eee;">
+            <td style="padding: 8px;">
+              <img src="${item.imageUrl}" alt="${item.title}" style="width: 40px; height: 40px; object-fit: contain;">
+            </td>
+            <td style="padding: 8px;">
+              <strong>${item.title}</strong><br>
+              <small style="color: #777;">${item.sku}</small>
+            </td>
+            <td style="padding: 8px; text-align: right;">${item.quantity_display}</td>
+          </tr>
+        `).join('')}
+      </tbody>
+    </table>
+
+    <h3 style="color: #333; margin-top: 20px;">Totals:</h3>
+    <p style="color: #555;"><strong>Non-Glow:</strong> ${orderData.totalNonGlow.toLocaleString()}</p>
+    <p style="color: #555;"><strong>Glow in the Dark:</strong> ${orderData.totalGlow.toLocaleString()}</p>
+    <p style="color: #555;"><strong>Envelopes (x1,000):</strong> ${orderData.totalEnvelope.toLocaleString()}</p>
+
+    ${orderData.notes ? `<p style="color: #555; margin-top: 20px;"><strong>Notes:</strong> ${orderData.notes}</p>` : ''}
+  </div>`;
+
+const adminParams = {
+  admin_html_content: adminHtml,
+  to_email: 'orders@dynamic.graphics'
+};
+
 
     // --- LISTENERS ---
 
